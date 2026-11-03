@@ -18,6 +18,7 @@ Un caisson électronique posé sur des **silentblocs**, avec une **carte électr
 |---|---|
 | `maquette.py` | Tout le modèle Python. Les données sont en haut du fichier. |
 | `recalage.py` | Recale le modèle sur un essai au pot vibrant par descente de gradient (essai simulé). |
+| `visualisation_3d.py` | Animation 3D du caisson, des silentblocs et de la carte, avec un curseur de fréquence. |
 | `maquette.cpp` | Le même calcul que `maquette.py` en C++, pour montrer les bases du C++. |
 | `resultats/` | Les sorties, recréées à chaque lancement. |
 
@@ -98,6 +99,24 @@ Il garde ensuite le **pire cas**.
 | Débattement 3σ | 1,71 mm pour un jeu de 5 mm (MS = +1,93) |
 | Carte 3σ | 0,029 mm pour 0,563 mm admissibles (MS = +18,4) |
 | Pire cas | amortissement faible (5 %) : MS = +0,98, toujours conforme |
+
+## Visualisation 3D (`visualisation_3d.py`)
+
+Dans Spyder, ouvre `visualisation_3d.py`, puis appuie sur **F5**. Une fenêtre séparée s'ouvre : la base vibre, les 4 silentblocs (ressorts orange) se déforment, le caisson monte et descend, et la carte (en vert) fléchit en cuvette. Le **curseur** en bas de la fenêtre change la fréquence d'excitation, de 5 à 300 Hz. Tu peux aussi faire tourner la vue à la souris.
+
+| Fréquence | Ce qu'on voit |
+|---|---|
+| ~25 Hz | Résonance de la suspension : le caisson bouge 5 fois plus que la base |
+| ~60 Hz | Isolation : le caisson bouge beaucoup moins que la base |
+| ~200 Hz | Le caisson est presque immobile, mais la carte vibre (sa propre résonance) |
+
+Les amplitudes et les retards viennent du calcul de `maquette.py`. Les déplacements sont agrandis et ralentis pour être visibles, et la flexion de la carte est agrandie trois fois de plus.
+
+L'animation a besoin de PyQt6 dans `.venv` (déjà installé). Si la fenêtre reste figée, va dans *Outils → Préférences → Console IPython → Graphiques → Sortie graphique* et choisis **Automatique**.
+
+Aperçus enregistrés : `resultats/animation_25Hz.gif`, `animation_60Hz.gif` et `animation_200Hz.gif`.
+
+![Résonance de la suspension à 25 Hz](resultats/animation_25Hz.gif)
 
 ## Recalage modèle-essai (`recalage.py`)
 
