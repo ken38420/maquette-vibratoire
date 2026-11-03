@@ -145,7 +145,7 @@ Aperçus : `resultats/radar_plots25Hz_25Hz.gif`, `radar_plots10Hz_amortis_25Hz.g
 
 ## Visualisation 3D (`visualisation_3d.py`)
 
-Dans Spyder, ouvre `visualisation_3d.py`, puis appuie sur **F5**. Une fenêtre séparée s'ouvre : la base vibre, les 4 silentblocs (ressorts orange) se déforment, le caisson monte et descend, et la carte (en vert) fléchit en cuvette. Le **curseur** en bas de la fenêtre change la fréquence d'excitation, de 5 à 300 Hz. Tu peux aussi faire tourner la vue à la souris.
+Dans Spyder, ouvre `visualisation_3d.py`, puis appuie sur **F5**. Une fenêtre séparée s'ouvre : la base vibre, les 4 silentblocs (ressorts rouges) se déforment, le caisson monte et descend, et la carte (en vert) fléchit en cuvette. Le **curseur** en bas de la fenêtre change la fréquence d'excitation, de 5 à 300 Hz. Tu peux aussi faire tourner la vue à la souris.
 
 | Fréquence | Ce qu'on voit |
 |---|---|

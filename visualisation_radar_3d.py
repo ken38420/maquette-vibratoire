@@ -36,7 +36,7 @@ COULEURS_CARTES = ["tab:orange", "tab:green", "tab:purple"]
 # Géométrie du dessin (unités arbitraires, x = longueur du camion)
 LONGUEUR_CHASSIS, LARGEUR_CHASSIS = 9.0, 2.4
 CAISSON_X, CAISSON_LONGUEUR, CAISSON_HAUTEUR = 4.2, 3.6, 2.2
-HAUTEUR_PLOTS = 0.6
+HAUTEUR_PLOTS = 1.0
 
 
 def calculer_transmissibilites(indice_plots: int, frequence_Hz: float) -> np.ndarray:
@@ -50,7 +50,8 @@ def calculer_transmissibilites(indice_plots: int, frequence_Hz: float) -> np.nda
 
 def dessiner_roue(axe, x, y, z_centre) -> None:
     angle = np.linspace(0, 2 * np.pi, 40)
-    axe.plot(x + 0.55 * np.cos(angle), np.full_like(angle, y), z_centre + 0.55 * np.sin(angle), color="k", lw=3)
+    axe.plot(x + 0.55 * np.cos(angle), np.full_like(angle, y), z_centre + 0.55 * np.sin(angle), color="k", lw=3,
+             zorder=0)  # dessinée sous le châssis
 
 
 def dessiner_scene(axe, phase: float, indice_plots: int, frequence_Hz: float) -> None:
@@ -64,6 +65,8 @@ def dessiner_scene(axe, phase: float, indice_plots: int, frequence_Hz: float) ->
     deplacements = echelle * (transmissibilites * oscillation).real  # caisson, cartes...
 
     axe.cla()
+    # ordre d'affichage imposé : les traits (ressorts) passent devant les volumes, sinon ils sont cachés
+    axe.computed_zorder = False
     # roues (fixes) et châssis (secoué par la piste)
     for x in (1.3, 6.0, 7.6):
         for y in (0.0, LARGEUR_CHASSIS):

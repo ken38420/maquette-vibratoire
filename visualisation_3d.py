@@ -55,10 +55,11 @@ def dessiner_boite(axe, x0, x1, y0, y1, z0, z1, couleur, transparence) -> None:
 
 def dessiner_ressort(axe, x, y, z_bas, z_haut) -> None:
     """silentbloc dessiné comme un ressort hélicoïdal entre z_bas et z_haut"""
-    angle = np.linspace(0, 8 * 2 * np.pi, 200)  # 8 spires
-    rayon = 0.22
-    axe.plot(x + rayon * np.cos(angle), y + rayon * np.sin(angle), np.linspace(z_bas, z_haut, angle.size),
-             color="tab:orange", linewidth=2.5)
+    angle = np.linspace(0, 5 * 2 * np.pi, 200)  # 5 spires : assez espacées pour voir le ressort s'étirer
+    rayon = 0.25
+    hauteurs = np.linspace(z_bas, z_haut, angle.size)
+    axe.plot(x + rayon * np.cos(angle), y + rayon * np.sin(angle), hauteurs, color="black", linewidth=5)  # contour
+    axe.plot(x + rayon * np.cos(angle), y + rayon * np.sin(angle), hauteurs, color="red", linewidth=3)
 
 
 def dessiner_scene(axe, phase: float, frequence_Hz: float) -> None:
@@ -71,6 +72,8 @@ def dessiner_scene(axe, phase: float, frequence_Hz: float) -> None:
     deplacement_carte = AMPLITUDE_BASE * (transmissibilite_carte * oscillation).real
 
     axe.cla()
+    # ordre d'affichage imposé : les traits (ressorts) passent devant les volumes, sinon ils sont cachés
+    axe.computed_zorder = False
     # base (le porteur)
     dessiner_boite(axe, -0.5, LARGEUR + 0.5, -0.5, PROFONDEUR + 0.5,
                    deplacement_base - 0.2, deplacement_base, "grey", 0.35)
