@@ -18,6 +18,7 @@ maquette-vibratoire = "maquette_vibratoire.modele:cli"
 dev = [
     "pytest",
     "ruff",
+    "spyder-kernels>=3.1.6,<3.2",
 ]
 
 [build-system]
