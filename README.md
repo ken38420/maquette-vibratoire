@@ -19,6 +19,8 @@ Un caisson électronique posé sur des **silentblocs**, avec une **carte électr
 | `maquette.py` | Tout le modèle Python. Les données sont en haut du fichier. |
 | `recalage.py` | Recale le modèle sur un essai au pot vibrant par descente de gradient (essai simulé). |
 | `visualisation_3d.py` | Animation 3D du caisson, des silentblocs et de la carte, avec un curseur de fréquence. |
+| `radar_camion.py` | **Exemple pour l'entretien** : radar sur camion, chaîne châssis → plots → caisson → 3 cartes, comparaison de 4 choix de plots. |
+| `visualisation_radar_3d.py` | Animation 3D du camion radar, avec un curseur de fréquence et des boutons pour choisir les plots. |
 | `maquette.cpp` | Le même calcul que `maquette.py` en C++, pour montrer les bases du C++. |
 | `resultats/` | Les sorties, recréées à chaque lancement. |
 
@@ -99,6 +101,47 @@ Il garde ensuite le **pire cas**.
 | Débattement 3σ | 1,71 mm pour un jeu de 5 mm (MS = +1,93) |
 | Carte 3σ | 0,029 mm pour 0,563 mm admissibles (MS = +18,4) |
 | Pire cas | amortissement faible (5 %) : MS = +0,98, toujours conforme |
+
+## Exemple pour l'entretien : radar sur camion (`radar_camion.py`)
+
+Prenons un radar monté sur camion, du type Ground Master. L'antenne est sur un mât. L'électronique est rangée dans des caissons posés sur des **plots** (silentblocs). Quand le camion roule sur une piste, les vibrations suivent une chaîne :
+
+```
+piste → châssis du camion → plots → caisson électronique → cartes (alimentation, traitement, RF)
+        (ENTRÉE : profil de piste)  (filtrent ou amplifient)   (chacune a sa propre résonance)
+```
+
+**La question du bureau d'études :** quels plots choisir pour que toutes les cartes tiennent, sans que le caisson tape contre la structure ?
+
+> Valeurs **illustratives** : profil de piste, masses, fréquences et dimensions des cartes sont inventés pour la démonstration. Ce ne sont pas des données du Ground Master.
+
+**Ce que montre le modèle** (profil de piste à 1,6 Grms, énergie surtout entre 10 et 40 Hz) :
+
+| Choix de plots | Caisson | Pire carte | Débattement 3σ (jeu 10 mm) | Verdict |
+|---|---|---|---|---|
+| Fixation rigide | 2,7 Grms | **8,4 Grms** (alimentation) | 0,1 mm | **Non conforme** : le mode du caisson (≈ 150 Hz) se couple avec la carte alimentation (120 Hz) |
+| Plots standard 25 Hz | **2,8 Grms** | 2,9 Grms | 3,3 mm | Conforme, mais les plots **amplifient** : 25 Hz tombe en plein dans l'énergie de la piste |
+| Plots souples 10 Hz | 1,7 Grms | 1,7 Grms | **12 mm** | **Non conforme** : le caisson tape contre la structure |
+| Plots souples 10 Hz amortis (25 %) | 1,1 Grms | 1,1 Grms | 6,9 mm | Conforme, et ce sont les cartes les mieux protégées |
+
+**Les leçons à retenir :**
+1. **Des plots ne sont pas « bons » ou « mauvais » dans l'absolu.** Des plots à 25 Hz isolent bien sur un avion, dont l'énergie est à haute fréquence, mais ils amplifient sur un camion. Il faut toujours partir du **profil de vie** (AECTP-100).
+2. **Deux modes proches se couplent.** Sans plots, le mode du caisson tombe sur la carte alimentation, qui reçoit 5 fois le niveau du châssis. C'est la règle de l'octave, vue en pratique.
+3. **Le choix final est un compromis.** Des plots souples protègent les cartes mais demandent du jeu autour du caisson. L'amortissement permet de réduire le débattement.
+
+Sorties : `resultats/radar_camion_rapport.txt` (note de calcul) et `resultats/radar_camion.png` (4 graphiques : transmissibilité, DSP du caisson, Grms à chaque étage, pire marge).
+
+**Animation 3D** : `visualisation_radar_3d.py` (F5 dans Spyder). Le curseur change la fréquence et les boutons à gauche changent les plots. À essayer :
+
+| Réglage | Ce qu'on voit |
+|---|---|
+| Plots 25 Hz, curseur sur 25 Hz | le caisson rebondit sur ses plots (×5) |
+| Plots 10 Hz amortis, curseur sur 25 Hz | le caisson reste presque immobile (×0,3) |
+| Fixation rigide, curseur sur 120 Hz | la carte alimentation (orange) fléchit très fortement |
+
+Aperçus : `resultats/radar_plots25Hz_25Hz.gif`, `radar_plots10Hz_amortis_25Hz.gif` et `radar_rigide_120Hz.gif`.
+
+![Radar sur camion, plots 25 Hz excités à 25 Hz](resultats/radar_plots25Hz_25Hz.gif)
 
 ## Visualisation 3D (`visualisation_3d.py`)
 

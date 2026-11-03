@@ -1,0 +1,49 @@
+RADAR SUR CAMION : CHOIX DES PLOTS DU CAISSON (valeurs illustratives)
+======================================================================
+
+Entrée : châssis du camion sur piste, 5-500 Hz, 1.61 Grms
+Caisson : 40.0 kg + 3 cartes ; jeu disponible 10.0 mm
+
+--- Fixation rigide (150 Hz, amortissement 5%)
+    Modes : 119, 152, 252, 401 Hz
+    Caisson : 2.66 Grms, débattement 3σ 0.1 mm  -> MS = +114.49  OK
+    Carte alimentation            8.41 Grms  flexion 3σ 0.435 mm  MS =  -0.05  NON CONFORME
+    Carte traitement              4.03 Grms  flexion 3σ 0.048 mm  MS = +13.42  OK
+    Carte RF                      2.99 Grms  flexion 3σ 0.014 mm  MS = +27.23  OK
+    PIRE MARGE : -0.05 (Carte alimentation)
+
+--- Plots standard 25 Hz (25 Hz, amortissement 10%)
+    Modes : 25, 121, 251, 401 Hz
+    Caisson : 2.79 Grms, débattement 3σ 3.3 mm  -> MS = +2.06  OK
+    Carte alimentation            2.93 Grms  flexion 3σ 0.151 mm  MS =  +1.72  OK
+    Carte traitement              2.82 Grms  flexion 3σ 0.034 mm  MS = +19.60  OK
+    Carte RF                      2.80 Grms  flexion 3σ 0.013 mm  MS = +29.12  OK
+    PIRE MARGE : +1.72 (Carte alimentation)
+
+--- Plots souples 10 Hz (10 Hz, amortissement 10%)
+    Modes : 10, 121, 251, 401 Hz
+    Caisson : 1.65 Grms, débattement 3σ 12.0 mm  -> MS = -0.17  NON CONFORME
+    Carte alimentation            1.66 Grms  flexion 3σ 0.086 mm  MS =  +3.78  OK
+    Carte traitement              1.65 Grms  flexion 3σ 0.020 mm  MS = +34.16  OK
+    Carte RF                      1.65 Grms  flexion 3σ 0.008 mm  MS = +50.17  OK
+    PIRE MARGE : -0.17 (Débattement caisson)
+
+--- Plots souples 10 Hz amortis (10 Hz, amortissement 25%)
+    Modes : 10, 121, 251, 401 Hz
+    Caisson : 1.06 Grms, débattement 3σ 6.9 mm  -> MS = +0.45  OK
+    Carte alimentation            1.08 Grms  flexion 3σ 0.056 mm  MS =  +6.35  OK
+    Carte traitement              1.06 Grms  flexion 3σ 0.013 mm  MS = +53.60  OK
+    Carte RF                      1.06 Grms  flexion 3σ 0.005 mm  MS = +78.56  OK
+    PIRE MARGE : +0.45 (Débattement caisson)
+
+CONCLUSION
+  Fixation rigide              NON CONFORME limité par : Carte alimentation           pire carte = 5.2 x châssis
+  Plots standard 25 Hz         OK           limité par : Carte alimentation           pire carte = 1.8 x châssis
+  Plots souples 10 Hz          NON CONFORME limité par : Débattement caisson          pire carte = 1.0 x châssis
+  Plots souples 10 Hz amortis  OK           limité par : Débattement caisson          pire carte = 0.7 x châssis
+  -> Plus grande marge             : Plots standard 25 Hz
+  -> Cartes les mieux protégées    : Plots souples 10 Hz amortis
+  Le choix final est un compromis : protéger les cartes (plots souples et amortis)
+  sans dépasser le jeu disponible autour du caisson (débattement).
+  Limites : 1 axe vertical, cartes = masses ponctuelles, antenne et mât non modélisés,
+  profil de piste illustratif. À confirmer par un modèle éléments finis et des mesures sur camion.
