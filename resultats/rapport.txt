@@ -1,0 +1,38 @@
+NOTE DE CALCUL - MAQUETTE VIBRATOIRE (valeurs illustratives)
+==============================================================
+
+1. HYPOTHÈSES
+   Caisson : 25.0 kg sur silentblocs à 25.0 Hz, amortissement 10%
+   Carte   : 0.3 kg, fréquence propre 200.0 Hz, amortissement 3%
+   Profil d'entrée : 20-2000 Hz, 6.06 Grms, 1 axe
+   Modèle : 2 masses ponctuelles, amortissement visqueux, comportement linéaire
+
+2. MODES PROPRES
+   Mode   Fréquence   Masse effective   Déformée caisson / carte
+   1         25.0 Hz   100.00%            +0.98 / +1.00
+   2        201.2 Hz     0.00%            +0.01 / -1.00
+
+3. RÉPONSE ALÉATOIRE
+   Entrée  : 6.06 Grms
+   Caisson : 1.47 Grms   (amplification max Q = 5.1)
+   Carte   : 1.56 Grms   (amplification max Q = 5.2, pic 3σ = 4.7 g)
+
+4. CRITÈRES  (marge de sécurité MS = admissible / calculé - 1, conforme si MS >= 0)
+   Séparation des modes f2/f1         calculé   8.049 -   limite   2.000 -   MS =  +3.02  OK
+   Débattement silentblocs 3σ         calculé   1.706 mm  limite   5.000 mm  MS =  +1.93  OK
+   Déplacement carte 3σ (Steinberg)   calculé   0.029 mm  limite   0.563 mm  MS = +18.38  OK
+
+5. SENSIBILITÉ (pire marge parmi les 3 critères)
+   Nominal                            f1 =  25.0 Hz  carte 1.56 Grms  débattement  1.71 mm  MS min =  +1.93  OK
+   Chaud : silentblocs -30 % raideur  f1 =  20.9 Hz  carte 1.12 Grms  débattement  1.73 mm  MS min =  +1.88  OK
+   Froid : silentblocs +50 % raideur  f1 =  30.6 Hz  carte 1.99 Grms  débattement  1.44 mm  MS min =  +2.29  OK
+   Amortissement faible (5 %)         f1 =  25.0 Hz  carte 2.19 Grms  débattement  2.52 mm  MS min =  +0.98  OK
+   Amortissement fort (20 %)          f1 =  25.0 Hz  carte 1.32 Grms  débattement  1.11 mm  MS min =  +3.02  OK
+
+6. VÉRIFICATION DU CODE
+   Oscillateur simple sous bruit blanc comparé à la solution exacte : écart 3.2e-05  OK
+
+CONCLUSION
+   Pire cas : Amortissement faible (5 %) (MS = +0.98) -> OK
+   Limites : 1 axe, masses ponctuelles, élastomère linéaire. À confirmer par un modèle
+   éléments finis puis par un essai au pot vibrant (recalage des fréquences et amortissements).

@@ -1,6 +1,6 @@
 .venv/
+.spyproject/
 __pycache__/
-*.pyc
-.pytest_cache/
-.ruff_cache/
-cpp/*.exe
+*.exe
+_avast_/
+src/
