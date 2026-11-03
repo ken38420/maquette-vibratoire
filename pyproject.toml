@@ -1,0 +1,37 @@
+[project]
+name = "maquette-vibratoire"
+version = "0.2.0"
+description = "Maquette 2 ddl : caisson sur silentblocs + carte électronique sous vibration aléatoire de base"
+readme = "README.md"
+requires-python = ">=3.13"
+# versions figées : un résultat scientifique doit être reproductible à l'identique
+dependencies = [
+    "numpy==2.5.4",
+    "scipy==1.18.1",
+    "matplotlib==3.11.2",
+]
+
+[project.scripts]
+maquette-vibratoire = "maquette_vibratoire.modele:cli"
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.7,<0.14"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B"]
+# N803/N806 : M, K, C, T, H sont les notations usuelles de la dynamique des structures
+# N802/N812 : les unités gardent leur casse dans les noms (Hz, dB, G_SI), c'est plus sûr que de les perdre
+ignore = ["N802", "N803", "N806", "N812"]

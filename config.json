@@ -1,0 +1,53 @@
+{
+  "_commentaire": "Valeurs ILLUSTRATIVES pour la démo d'entretien. Elles ne viennent pas d'un produit Thales réel : à remplacer par les données du caisson et le profil AECTP 401 du programme.",
+
+  "caisson": {
+    "_commentaire": "Masse 1 : caisson complet posé sur ses silentblocs (liaison caisson / porteur).",
+    "masse_kg": 25.0,
+    "frequence_suspension_Hz": 25.0,
+    "amortissement_ratio": 0.10
+  },
+
+  "carte": {
+    "_commentaire": "Masse 2 : carte électronique (masse modale effective) fixée dans le caisson.",
+    "masse_kg": 0.30,
+    "frequence_propre_Hz": 200.0,
+    "amortissement_ratio": 0.03
+  },
+
+  "dsp_entree": {
+    "_commentaire": "Profil de vibration aléatoire ILLUSTRATIF (forme trapèze classique). Points (f, pente) : rampe montante, palier, rampe descendante.",
+    "f_min_Hz": 20.0,
+    "f_palier_debut_Hz": 80.0,
+    "f_palier_fin_Hz": 350.0,
+    "f_max_Hz": 2000.0,
+    "niveau_palier_g2_par_Hz": 0.04,
+    "pente_montante_dB_par_octave": 3.0,
+    "pente_descendante_dB_par_octave": -3.0
+  },
+
+  "critere_steinberg": {
+    "_commentaire": "Critère de déplacement admissible d'une carte (Steinberg, Vibration Analysis for Electronic Equipment, 3e éd.). Dimensions en mm, converties en pouces dans le code.",
+    "longueur_bord_carte_B_mm": 160.0,
+    "epaisseur_carte_h_mm": 1.6,
+    "longueur_composant_L_mm": 25.0,
+    "facteur_composant_c": 1.0,
+    "facteur_position_r": 1.0
+  },
+
+  "numerique": {
+    "_commentaire": "Grille fréquentielle logarithmique pour les FRF et l'intégration des DSP.",
+    "f_grille_min_Hz": 1.0,
+    "f_grille_max_Hz": 3000.0,
+    "n_points": 40000
+  },
+
+  "etude_amortissement": {
+    "_commentaire": "Balayage du taux d'amortissement des silentblocs pour montrer son effet sur la carte.",
+    "amortissements_suspension_ratio": [0.03, 0.05, 0.10, 0.20, 0.30]
+  },
+
+  "sortie": {
+    "dossier_figures": "figures"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "_commentaire": "Résultats de la version validée du 3 novembre 2026 (avant passage en projet uv). Sert au test de non-régression.",
+  "modes_Hz": [
+    24.997648061874603,
+    201.2153512815925
+  ],
+  "transmissibilite_max": [
+    5.12318846853557,
+    5.2029271890864575
+  ],
+  "grms": {
+    "grms_entree": 6.064406366249723,
+    "grms_caisson": 1.4710499330905025,
+    "grms_carte": 1.562274873975543
+  },
+  "steinberg": {
+    "drel_3sigma_mm": 0.029100830577435753,
+    "admissible_mm": 0.5632526600381039
+  },
+  "balayage_amortissement": [
+    {
+      "zeta_susp": 0.03,
+      "grms_caisson": 2.793879496234516,
+      "grms_carte": 2.8537450942088998,
+      "drel_3sigma_mm": 0.05316403729379184
+    },
+    {
+      "zeta_susp": 0.05,
+      "grms_caisson": 2.1327850573273177,
+      "grms_carte": 2.1916986647865175,
+      "drel_3sigma_mm": 0.0408296082190932
+    },
+    {
+      "zeta_susp": 0.1,
+      "grms_caisson": 1.4710499330905025,
+      "grms_carte": 1.562274873975543,
+      "drel_3sigma_mm": 0.029100830577435753
+    },
+    {
+      "zeta_susp": 0.2,
+      "grms_caisson": 1.0577020742700687,
+      "grms_carte": 1.3239823194893108,
+      "drel_3sigma_mm": 0.024650878677842155
+    },
+    {
+      "zeta_susp": 0.3,
+      "grms_caisson": 0.956747105382063,
+      "grms_carte": 1.4785606377917684,
+      "drel_3sigma_mm": 0.027517686976232934
+    }
+  ]
+}
