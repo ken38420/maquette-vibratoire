@@ -17,8 +17,17 @@ Un caisson électronique posé sur des **silentblocs**, avec une **carte électr
 | Fichier | Rôle |
 |---|---|
 | `maquette.py` | Tout le modèle Python. Les données sont en haut du fichier. |
-| `maquette.cpp` | Le même calcul en C++, pour montrer les bases du C++. |
+| `recalage.py` | Recale le modèle sur un essai au pot vibrant par descente de gradient (essai simulé). |
+| `maquette.cpp` | Le même calcul que `maquette.py` en C++, pour montrer les bases du C++. |
 | `resultats/` | Les sorties, recréées à chaque lancement. |
+
+Le code suit le style du cours [ceriam.net](https://ceriam.net/) :
+- des noms explicites, sans variable d'une seule lettre, avec un verbe pour chaque fonction ;
+- des constantes en MAJUSCULES ;
+- des `@dataclass` (`Etage`, `Resultat`) pour regrouper les données ;
+- des annotations de type ;
+- une exception `DonneeInvalide`, levée si une donnée n'a pas de sens physique ;
+- une `seed` pour que le hasard soit le même à chaque lancement.
 
 ## Lancer
 
@@ -28,6 +37,10 @@ Un caisson électronique posé sur des **silentblocs**, avec une **carte électr
 
 ```bash
 .venv\Scripts\python.exe maquette.py
+```
+
+```bash
+.venv\Scripts\python.exe recalage.py
 ```
 
 **Version C++** :
@@ -85,6 +98,36 @@ Il garde ensuite le **pire cas**.
 | Débattement 3σ | 1,71 mm pour un jeu de 5 mm (MS = +1,93) |
 | Carte 3σ | 0,029 mm pour 0,563 mm admissibles (MS = +18,4) |
 | Pire cas | amortissement faible (5 %) : MS = +0,98, toujours conforme |
+
+## Recalage modèle-essai (`recalage.py`)
+
+La fiche technique annonce des silentblocs à 25 Hz et 10 % d'amortissement, mais le vrai produit est différent. On le mesure au pot vibrant, puis on ajuste le modèle pour qu'il colle à la mesure. C'est la mission « corrélation des modèles » de l'offre.
+
+La méthode reprend le cours (*Forward Neural Network → Loss / Training*) :
+
+| Notion du cours | Dans `recalage.py` |
+|---|---|
+| Paramètres θ | fréquence et amortissement des silentblocs (normalisés autour de 1) |
+| Perte J (MSE avec le facteur ½) | écart entre la transmissibilité du modèle et celle mesurée (en log) |
+| Descente de gradient θ ← θ − α∇J | `recaler()`, avec un pas α = 0,5 |
+| Critère d'arrêt ‖α∇J‖ < ε | ε = 10⁻⁷ |
+| Jeu d'entraînement / jeu de test | 70 % des points servent à recaler, 30 % à juger le résultat |
+| Graine (`seed`) | le bruit de mesure est le même à chaque lancement |
+
+Le gradient est calculé par **différences finies**. Avec seulement 2 paramètres, c'est suffisant : l'autodifférentiation vue dans le cours ne devient utile qu'avec beaucoup de paramètres.
+
+**Résultat** (l'essai est simulé, avec un vrai caisson caché et 5 % de bruit) :
+
+| | Fiche technique | Recalé | Vrai (caché) |
+|---|---|---|---|
+| Fréquence | 25,0 Hz | 22,2 Hz | 22,0 Hz |
+| Amortissement | 10 % | 14,1 % | 14 % |
+
+- La perte sur le jeu de test passe de 9,6·10⁻³ à 1,4·10⁻⁴.
+- La pire marge de sécurité passe de +1,93 à +2,47.
+- Figure : `resultats/recalage.png`.
+
+**Suite possible, vue dans le cours** : un **PINN** (réseau de neurones informé par la physique) pourrait faire ce recalage quand le modèle physique est mal connu (élastomère non linéaire, effet de la température). Pour un système linéaire comme celui-ci, la méthode ci-dessus reste plus simple et plus précise.
 
 ## À dire en entretien
 

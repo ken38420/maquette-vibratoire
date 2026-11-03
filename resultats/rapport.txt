@@ -35,4 +35,4 @@ NOTE DE CALCUL - MAQUETTE VIBRATOIRE (valeurs illustratives)
 CONCLUSION
    Pire cas : Amortissement faible (5 %) (MS = +0.98) -> OK
    Limites : 1 axe, masses ponctuelles, élastomère linéaire. À confirmer par un modèle
-   éléments finis puis par un essai au pot vibrant (recalage des fréquences et amortissements).
+   éléments finis puis par un essai au pot vibrant (voir recalage.py).
