@@ -79,7 +79,7 @@ Pour essayer d'autres valeurs (masse, fréquence, amortissement, profil), modifi
 |---|---|
 | Séparation des modes | La carte vibre-t-elle au moins 2 fois plus haut que la suspension (règle de l'octave) ? |
 | Débattement des silentblocs (3σ) | Le caisson risque-t-il de taper contre la structure (jeu de 5 mm) ? |
-| Déplacement de la carte (3σ, Steinberg) | Les soudures des composants vont-elles casser par fatigue ? |
+| Déplacement de la carte (3σ, Steinberg avec C = 1 et r = 1) | Les soudures des composants vont-elles casser par fatigue ? |
 
 **Sensibilité.** Le programme refait le calcul dans quatre autres cas :
 - silentblocs plus mous (au chaud, −30 % de raideur) ;
@@ -114,18 +114,28 @@ piste → châssis du camion → plots → caisson électronique → cartes (ali
 
 > Valeurs **illustratives** : profil de piste, masses, fréquences et dimensions des cartes sont inventés pour la démonstration. Ce ne sont pas des données du Ground Master.
 
+**Les cartes** sont modélisées comme des plaques FR4 en appui simple sur leurs 4 bords. Leur fréquence est **calculée** à partir de leurs dimensions (Techniques de l'Ingénieur E3954) : fn = π/2 · √(D/ρh) · (1/a² + 1/b²), avec D = Eh³/12(1−ν²). La flexion admissible suit la formule complète de **Steinberg**, Z = 0,00022·B / (C·h·r·√L). La constante C dépend du boîtier du plus gros composant :
+
+| Carte | Dimensions | Fréquence calculée | Boîtier (C) | Flexion 3σ admissible |
+|---|---|---|---|---|
+| Alimentation | 160 × 100 × 2,0 mm, 0,60 kg | 127 Hz | à broches (1,0) | 0,41 mm |
+| Traitement | 233 × 160 × 2,4 mm, 0,35 kg | 137 Hz | BGA (1,75) | 0,26 mm |
+| RF | 100 × 80 × 2,0 mm, 0,25 kg | 255 Hz | céramique sans broches (2,25) | 0,14 mm |
+
+On prend r = 1 : le composant est supposé au centre de la carte, ce qui est le cas le plus sévère. Le boîtier change beaucoup le résultat. Avec les plots 25 Hz, la carte critique est la carte **traitement** (BGA), alors que la carte alimentation reçoit plus de Grms.
+
 **Ce que montre le modèle** (profil de piste à 1,6 Grms, énergie surtout entre 10 et 40 Hz) :
 
 | Choix de plots | Caisson | Pire carte | Débattement 3σ (jeu 10 mm) | Verdict |
 |---|---|---|---|---|
-| Fixation rigide | 2,7 Grms | **8,4 Grms** (alimentation) | 0,1 mm | **Non conforme** : le mode du caisson (≈ 150 Hz) se couple avec la carte alimentation (120 Hz) |
-| Plots standard 25 Hz | **2,8 Grms** | 2,9 Grms | 3,3 mm | Conforme, mais les plots **amplifient** : 25 Hz tombe en plein dans l'énergie de la piste |
+| Fixation rigide | 2,5 Grms | **10,8 Grms** (traitement) | 0,1 mm | **Non conforme** : le mode du caisson (≈ 150 Hz) se couple avec les cartes alimentation (127 Hz) et traitement (137 Hz) |
+| Plots standard 25 Hz | **2,8 Grms** | 2,9 Grms | 3,3 mm | Conforme (pire marge +1,31, carte traitement), mais les plots **amplifient** : 25 Hz tombe en plein dans l'énergie de la piste |
 | Plots souples 10 Hz | 1,7 Grms | 1,7 Grms | **12 mm** | **Non conforme** : le caisson tape contre la structure |
 | Plots souples 10 Hz amortis (25 %) | 1,1 Grms | 1,1 Grms | 6,9 mm | Conforme, et ce sont les cartes les mieux protégées |
 
 **Les leçons à retenir :**
 1. **Des plots ne sont pas « bons » ou « mauvais » dans l'absolu.** Des plots à 25 Hz isolent bien sur un avion, dont l'énergie est à haute fréquence, mais ils amplifient sur un camion. Il faut toujours partir du **profil de vie** (AECTP-100).
-2. **Deux modes proches se couplent.** Sans plots, le mode du caisson tombe sur la carte alimentation, qui reçoit 5 fois le niveau du châssis. C'est la règle de l'octave, vue en pratique.
+2. **Deux modes proches se couplent.** Sans plots, le mode du caisson tombe sur les cartes alimentation et traitement : la carte traitement reçoit près de 7 fois le niveau du châssis. C'est la règle de l'octave, vue en pratique.
 3. **Le choix final est un compromis.** Des plots souples protègent les cartes mais demandent du jeu autour du caisson. L'amortissement permet de réduire le débattement.
 
 Sorties : `resultats/radar_camion_rapport.txt` (note de calcul) et `resultats/radar_camion.png` (4 graphiques : transmissibilité, DSP du caisson, Grms à chaque étage, pire marge).
@@ -136,9 +146,9 @@ Sorties : `resultats/radar_camion_rapport.txt` (note de calcul) et `resultats/ra
 |---|---|
 | Plots 25 Hz, curseur sur 25 Hz | le caisson rebondit sur ses plots (×5) |
 | Plots 10 Hz amortis, curseur sur 25 Hz | le caisson reste presque immobile (×0,3) |
-| Fixation rigide, curseur sur 120 Hz | la carte alimentation (orange) fléchit très fortement |
+| Fixation rigide, curseur sur 135 Hz | les cartes alimentation (orange) et traitement (verte) fléchissent très fortement |
 
-Aperçus : `resultats/radar_plots25Hz_25Hz.gif`, `radar_plots10Hz_amortis_25Hz.gif` et `radar_rigide_120Hz.gif`.
+Aperçus : `resultats/radar_plots25Hz_25Hz.gif`, `radar_plots10Hz_amortis_25Hz.gif` et `radar_rigide_135Hz.gif`.
 
 ![Radar sur camion, plots 25 Hz excités à 25 Hz](resultats/radar_plots25Hz_25Hz.gif)
 
