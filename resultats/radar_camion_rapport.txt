@@ -1,7 +1,7 @@
 RADAR SUR CAMION : CHOIX DES PLOTS DU CAISSON (valeurs illustratives)
 ======================================================================
 
-Entrée : châssis du camion sur piste, 5-500 Hz, 1.61 Grms
+Entrée : châssis sur piste, 5-500 Hz, 1.61 Grms
 Caisson : 40.0 kg + 3 cartes ; jeu disponible 10.0 mm
 
 --- Fixation rigide (150 Hz, amortissement 5%)
@@ -41,9 +41,9 @@ CONCLUSION
   Plots standard 25 Hz         OK           limité par : Carte alimentation           pire carte = 1.8 x châssis
   Plots souples 10 Hz          NON CONFORME limité par : Débattement caisson          pire carte = 1.0 x châssis
   Plots souples 10 Hz amortis  OK           limité par : Débattement caisson          pire carte = 0.7 x châssis
-  -> Plus grande marge             : Plots standard 25 Hz
-  -> Cartes les mieux protégées    : Plots souples 10 Hz amortis
+  -> Plus grande marge          : Plots standard 25 Hz
+  -> Cartes les mieux protégées : Plots souples 10 Hz amortis
   Le choix final est un compromis : protéger les cartes (plots souples et amortis)
   sans dépasser le jeu disponible autour du caisson (débattement).
   Limites : 1 axe vertical, cartes = masses ponctuelles, antenne et mât non modélisés,
-  profil de piste illustratif. À confirmer par un modèle éléments finis et des mesures sur camion.
+  profil de piste illustratif. À confirmer par éléments finis et mesures sur camion.

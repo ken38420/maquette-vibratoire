@@ -1,286 +1,177 @@
-"""Radar monté sur camion : que subit chaque carte électronique quand le camion roule sur une piste ?
+"""Radar sur camion : que subit chaque carte électronique quand le camion roule sur une piste ?
 
-Chaîne de transmission des vibrations :
-
-    piste -> châssis du camion -> plots (silentblocs) -> caisson électronique -> cartes
-
-  - le châssis est secoué par la piste : c'est l'ENTRÉE (une DSP d'accélération, en g²/Hz) ;
-  - le caisson est posé sur des plots, qui filtrent (ou amplifient !) les vibrations ;
-  - chaque carte est fixée dans le caisson et a sa propre fréquence de résonance.
+Chemin des vibrations :  piste -> châssis -> plots (silentblocs) -> caisson -> cartes
 
 Question du bureau d'études : QUELS PLOTS choisir pour que toutes les cartes tiennent,
 sans que le caisson tape contre la structure ?
+Pour chaque choix de plots, le programme donne : le Grms de chaque étage,
+le débattement du caisson et la marge de sécurité de chaque carte.
 
-Le programme compare plusieurs choix de plots et sort, pour chacun :
-Grms de chaque étage, débattement du caisson, marge de sécurité de chaque carte.
-
-Valeurs ILLUSTRATIVES, inspirées d'un radar sur camion (type Ground Master) :
-ce ne sont pas des données Thales.
+Valeurs ILLUSTRATIVES, inspirées d'un radar sur camion : ce ne sont pas des données Thales.
 """
 
 import os
-from dataclasses import dataclass
 
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.typing as npt
 
-type Vecteur = npt.NDArray[np.float64]
+G = 9.81  # gravité [m/s²]
 
-GRAVITE = 9.81  # [m/s²]
-MM_PAR_POUCE = 25.4
+# ---------------- 1. DONNÉES (illustratives) ----------------
+masse_caisson = 40.0  # [kg] caisson sans les cartes
 
+# cartes : [nom, masse kg, fréquence Hz, amortissement, bord mm, épaisseur mm, plus gros composant mm]
+cartes = [["Carte alimentation", 0.60, 120.0, 0.03, 160.0, 2.0, 30.0],
+          ["Carte traitement", 0.35, 250.0, 0.03, 233.0, 1.6, 35.0],
+          ["Carte RF", 0.25, 400.0, 0.03, 100.0, 1.6, 20.0]]
 
-@dataclass
-class Carte:
-    nom: str
-    masse_kg: float
-    frequence_Hz: float  # fréquence propre de la carte fixée sur un caisson rigide
-    amortissement: float
-    bord_mm: float  # longueur du bord de la carte (pour Steinberg)
-    epaisseur_mm: float
-    composant_mm: float  # longueur du plus gros composant
+# choix de plots : [nom, fréquence Hz du caisson posé sur ses plots, amortissement]
+options_plots = [["Fixation rigide", 150.0, 0.05],
+                 ["Plots standard 25 Hz", 25.0, 0.10],
+                 ["Plots souples 10 Hz", 10.0, 0.10],
+                 ["Plots souples 10 Hz amortis", 10.0, 0.25]]
 
+# piste : l'énergie d'un camion est surtout entre 5 et 100 Hz (suspensions, roues, moteur)
+profil_f = [5, 10, 40, 100, 500]  # [Hz]
+profil_dsp = [0.015, 0.04, 0.04, 0.004, 0.0004]  # [g²/Hz]
 
-@dataclass
-class Plots:
-    nom: str
-    frequence_Hz: float  # fréquence du caisson complet posé sur ses plots
-    amortissement: float
-
-
-# ============================================================
-# 1. DONNÉES D'ENTRÉE (illustratives)
-# ============================================================
-MASSE_CAISSON_KG = 40.0  # caisson + châssis interne, sans les cartes
-
-CARTES = [
-    Carte("Carte alimentation", 0.60, 120.0, 0.03, 160.0, 2.0, 30.0),
-    Carte("Carte traitement", 0.35, 250.0, 0.03, 233.0, 1.6, 35.0),  # traitement du signal
-    Carte("Carte RF", 0.25, 400.0, 0.03, 100.0, 1.6, 20.0),  # hyperfréquence
-]
-
-OPTIONS_PLOTS = [
-    Plots("Fixation rigide", 150.0, 0.05),
-    Plots("Plots standard 25 Hz", 25.0, 0.10),
-    Plots("Plots souples 10 Hz", 10.0, 0.10),
-    Plots("Plots souples 10 Hz amortis", 10.0, 0.25),
-]
-
-# Profil de piste : l'énergie d'un camion est surtout entre 5 et 100 Hz
-# (suspensions, roues, moteur). Points (fréquence [Hz], DSP [g²/Hz]), droites en log-log.
-PROFIL_FREQUENCES_HZ = [5, 10, 40, 100, 500]
-PROFIL_DSP_G2_HZ = [0.015, 0.04, 0.04, 0.004, 0.0004]
-
-JEU_MM = 10.0  # débattement disponible autour du caisson [mm]
-FREQUENCES_HZ = np.geomspace(1, 1000, 20000)
+jeu_mm = 10.0  # place disponible autour du caisson [mm]
+f = np.geomspace(1, 1000, 20000)  # fréquences de calcul [Hz]
 
 
-# ============================================================
-# 2. CALCUL
-# ============================================================
-def calculer_dsp_entree(frequences: Vecteur) -> Vecteur:
-    """DSP du châssis [g²/Hz] : interpolation log-log du profil, nulle en dehors"""
-    log_dsp = np.interp(np.log10(frequences), np.log10(PROFIL_FREQUENCES_HZ), np.log10(PROFIL_DSP_G2_HZ))
-    dsp = 10**log_dsp
-    dsp[(frequences < PROFIL_FREQUENCES_HZ[0]) | (frequences > PROFIL_FREQUENCES_HZ[-1])] = 0.0
+# ---------------- 2. CALCUL ----------------
+def dsp_profil(f):
+    """DSP du châssis [g²/Hz] : droites en log-log entre les points du profil, nulle en dehors"""
+    dsp = 10 ** np.interp(np.log10(f), np.log10(profil_f), np.log10(profil_dsp))
+    dsp[(f < profil_f[0]) | (f > profil_f[-1])] = 0
     return dsp
 
 
-def calculer_rms(dsp: Vecteur, frequences: Vecteur) -> float:
+def rms(dsp, f):
     """valeur efficace (RMS) = racine de l'aire sous la DSP"""
-    return float(np.sqrt(np.trapezoid(dsp, frequences)))
+    return np.sqrt(np.trapezoid(dsp, f))
 
 
-def construire_matrices(plots: Plots) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]:
-    """matrices M, K, C : degré de liberté 0 = caisson, 1, 2, 3... = cartes"""
-    nb_ddl = 1 + len(CARTES)
-    masse_suspendue = MASSE_CAISSON_KG + sum(carte.masse_kg for carte in CARTES)
-    matrice_masse = np.diag([MASSE_CAISSON_KG] + [carte.masse_kg for carte in CARTES])
-    matrice_raideur = np.zeros((nb_ddl, nb_ddl))
-    matrice_amort = np.zeros((nb_ddl, nb_ddl))
+def reponse(f_plots, a_plots, f):
+    """renvoie : fréquences propres [Hz], déplacements z et transmissibilité T
+    (colonne 0 = caisson, puis une colonne par carte)"""
+    masses = [masse_caisson] + [c[1] for c in cartes]
+    n = len(masses)
+    M = np.diag(masses)
+    K = np.zeros((n, n))
+    C = np.zeros((n, n))
 
-    # plots : entre le châssis (imposé) et le caisson -> k = m ω², c = 2 ζ √(k m)
-    raideur_plots = masse_suspendue * (2 * np.pi * plots.frequence_Hz) ** 2
-    matrice_raideur[0, 0] += raideur_plots
-    matrice_amort[0, 0] += 2 * plots.amortissement * np.sqrt(raideur_plots * masse_suspendue)
+    # plots : ressort entre le châssis et le caisson (k = m ω², c = 2 ζ √(k m))
+    k = sum(masses) * (2 * np.pi * f_plots) ** 2
+    K[0, 0] = k
+    C[0, 0] = 2 * a_plots * np.sqrt(k * sum(masses))
 
-    # chaque carte : un ressort entre le caisson (0) et la carte (indice)
-    for indice, carte in enumerate(CARTES, start=1):
-        raideur = carte.masse_kg * (2 * np.pi * carte.frequence_Hz) ** 2
-        amort = 2 * carte.amortissement * np.sqrt(raideur * carte.masse_kg)
-        for matrice, valeur in ((matrice_raideur, raideur), (matrice_amort, amort)):
-            matrice[0, 0] += valeur
-            matrice[indice, indice] += valeur
-            matrice[0, indice] -= valeur
-            matrice[indice, 0] -= valeur
-    return matrice_masse, matrice_raideur, matrice_amort
+    # chaque carte : un ressort entre le caisson (0) et la carte (i)
+    for i in range(1, n):
+        nom, m, fc, a = cartes[i - 1][:4]
+        k = m * (2 * np.pi * fc) ** 2
+        c = 2 * a * np.sqrt(k * m)
+        K[0, 0] += k
+        K[i, i] += k
+        K[0, i] -= k
+        K[i, 0] -= k
+        C[0, 0] += c
+        C[i, i] += c
+        C[0, i] -= c
+        C[i, 0] -= c
 
-
-def calculer_reponse(plots: Plots, frequences: Vecteur, dsp_entree: Vecteur) -> dict:
-    """réponse de toute la chaîne pour un choix de plots"""
-    matrice_masse, matrice_raideur, matrice_amort = construire_matrices(plots)
-    un = np.ones(len(matrice_masse))
-
-    # modes propres
-    omega_carre = np.linalg.eigvals(np.linalg.inv(matrice_masse) @ matrice_raideur).real
-    frequences_propres = np.sort(np.sqrt(omega_carre)) / (2 * np.pi)
-
-    # réponse en fréquence : (K - ω²M + iωC) z = -M·1·a_châssis
-    deplacements = np.array(
-        [
-            np.linalg.solve(matrice_raideur - omega**2 * matrice_masse + 1j * omega * matrice_amort, -matrice_masse @ un)
-            for omega in 2 * np.pi * frequences
-        ]
-    )
-    transmissibilite = 1 - (2 * np.pi * frequences[:, None]) ** 2 * deplacements
-    dsp_sortie = np.abs(transmissibilite) ** 2 * dsp_entree[:, None]  # colonne 0 caisson, puis cartes
-
-    dsp_debattement = np.abs(deplacements[:, 0]) ** 2 * dsp_entree * GRAVITE**2
-    flexions_3sigma_mm = [
-        3 * calculer_rms(np.abs(deplacements[:, indice] - deplacements[:, 0]) ** 2 * dsp_entree * GRAVITE**2,
-                         frequences) * 1000
-        for indice in range(1, len(un))
-    ]
-    return {
-        "frequences_propres_Hz": frequences_propres,
-        "transmissibilite_caisson": np.abs(transmissibilite[:, 0]),
-        "dsp_sortie": dsp_sortie,
-        "grms": [calculer_rms(dsp_sortie[:, indice], frequences) for indice in range(len(un))],
-        "debattement_3sigma_mm": 3 * calculer_rms(dsp_debattement, frequences) * 1000,
-        "flexions_3sigma_mm": flexions_3sigma_mm,
-    }
+    modes = np.sort(np.sqrt(np.linalg.eigvals(np.linalg.inv(M) @ K).real)) / (2 * np.pi)
+    w = 2 * np.pi * f
+    # à chaque fréquence : (K - ω²M + iωC) z = -M·1·a   (z = déplacement par rapport au châssis)
+    z = np.array([np.linalg.solve(K - wi**2 * M + 1j * wi * C, -M @ np.ones(n)) for wi in w])
+    T = 1 - w[:, None] ** 2 * z  # accélération de la pièce / accélération du châssis
+    return modes, z, T
 
 
-def calculer_admissible_steinberg_mm(carte: Carte) -> float:
-    """critère de Steinberg (formule en pouces) : au-dessous, ~10 millions de cycles avant rupture des soudures"""
-    bord, epaisseur, composant = (x / MM_PAR_POUCE for x in (carte.bord_mm, carte.epaisseur_mm, carte.composant_mm))
-    return 0.00022 * bord / (epaisseur * np.sqrt(composant)) * MM_PAR_POUCE
+def verdict(ms):
+    return "OK" if ms >= 0 else "NON CONFORME"
 
 
-def calculer_marges(reponse: dict) -> dict[str, float]:
-    """marges de sécurité MS = admissible / calculé - 1 (conforme si MS >= 0)"""
-    marges = {"Débattement caisson": JEU_MM / reponse["debattement_3sigma_mm"] - 1}
-    for carte, flexion in zip(CARTES, reponse["flexions_3sigma_mm"], strict=True):
-        marges[carte.nom] = calculer_admissible_steinberg_mm(carte) / flexion - 1
-    return marges
+# ---------------- 3. PROGRAMME PRINCIPAL ----------------
+if __name__ == "__main__":
+    dsp = dsp_profil(f)
+    grms_chassis = rms(dsp, f)
+    lignes = ["RADAR SUR CAMION : CHOIX DES PLOTS DU CAISSON (valeurs illustratives)", "=" * 70, "",
+              f"Entrée : châssis sur piste, {profil_f[0]}-{profil_f[-1]} Hz, {grms_chassis:.2f} Grms",
+              f"Caisson : {masse_caisson} kg + {len(cartes)} cartes ; jeu disponible {jeu_mm} mm", ""]
+    resultats = []  # pour chaque option : [T, grms, pire marge, critère limitant]
 
-
-# ============================================================
-# 3. SORTIES
-# ============================================================
-def conforme(marge: float) -> str:
-    return "OK" if marge >= 0 else "NON CONFORME"
-
-
-def ecrire_rapport(grms_chassis: float, reponses: list[dict], marges: list[dict]) -> str:
-    lignes = [
-        "RADAR SUR CAMION : CHOIX DES PLOTS DU CAISSON (valeurs illustratives)", "=" * 70, "",
-        f"Entrée : châssis du camion sur piste, {PROFIL_FREQUENCES_HZ[0]}-{PROFIL_FREQUENCES_HZ[-1]} Hz, "
-        f"{grms_chassis:.2f} Grms",
-        f"Caisson : {MASSE_CAISSON_KG} kg + {len(CARTES)} cartes ; jeu disponible {JEU_MM} mm", "",
-    ]
-    for plots, reponse, marge in zip(OPTIONS_PLOTS, reponses, marges, strict=True):
-        lignes += [
-            f"--- {plots.nom} ({plots.frequence_Hz:.0f} Hz, amortissement {plots.amortissement:.0%})",
-            f"    Modes : {', '.join(f'{f:.0f}' for f in reponse['frequences_propres_Hz'])} Hz",
-            f"    Caisson : {reponse['grms'][0]:.2f} Grms, débattement 3σ {reponse['debattement_3sigma_mm']:.1f} mm"
-            f"  -> MS = {marge['Débattement caisson']:+.2f}  {conforme(marge['Débattement caisson'])}",
-        ]
-        for indice, carte in enumerate(CARTES, start=1):
-            lignes.append(f"    {carte.nom:28s} {reponse['grms'][indice]:5.2f} Grms  "
-                          f"flexion 3σ {reponse['flexions_3sigma_mm'][indice - 1]:.3f} mm  "
-                          f"MS = {marge[carte.nom]:+6.2f}  {conforme(marge[carte.nom])}")
-        critere_limitant = min(marge, key=marge.get)
-        lignes.append(f"    PIRE MARGE : {marge[critere_limitant]:+.2f} ({critere_limitant})")
-        lignes.append("")
+    for nom_plots, f_plots, a_plots in options_plots:
+        modes, z, T = reponse(f_plots, a_plots, f)
+        grms = [rms(abs(T[:, i]) ** 2 * dsp, f) for i in range(len(modes))]
+        debattement = 3 * rms(abs(z[:, 0]) ** 2 * dsp * G**2, f) * 1000  # 3σ [mm]
+        marges = {"Débattement caisson": jeu_mm / debattement - 1}  # MS = limite / calculé - 1
+        lignes += [f"--- {nom_plots} ({f_plots:.0f} Hz, amortissement {a_plots:.0%})",
+                   f"    Modes : {', '.join(f'{m:.0f}' for m in modes)} Hz",
+                   f"    Caisson : {grms[0]:.2f} Grms, débattement 3σ {debattement:.1f} mm"
+                   f"  -> MS = {marges['Débattement caisson']:+.2f}  {verdict(marges['Débattement caisson'])}"]
+        for i, carte in enumerate(cartes, start=1):
+            flexion = 3 * rms(abs(z[:, i] - z[:, 0]) ** 2 * dsp * G**2, f) * 1000  # carte / caisson, 3σ [mm]
+            bord, epaisseur, composant = carte[4] / 25.4, carte[5] / 25.4, carte[6] / 25.4  # en pouces
+            admissible = 0.00022 * bord / (epaisseur * np.sqrt(composant)) * 25.4  # Steinberg [mm]
+            marges[carte[0]] = admissible / flexion - 1
+            lignes.append(f"    {carte[0]:28s} {grms[i]:5.2f} Grms  flexion 3σ {flexion:.3f} mm  "
+                          f"MS = {marges[carte[0]]:+6.2f}  {verdict(marges[carte[0]])}")
+        limitant = min(marges, key=marges.get)
+        lignes += [f"    PIRE MARGE : {marges[limitant]:+.2f} ({limitant})", ""]
+        resultats.append([T, grms, marges[limitant], limitant])
 
     lignes.append("CONCLUSION")
-    for plots, reponse, marge in zip(OPTIONS_PLOTS, reponses, marges, strict=True):
-        critere_limitant = min(marge, key=marge.get)
-        rapport_cartes = max(reponse["grms"][1:]) / grms_chassis  # pire carte / châssis
-        lignes.append(f"  {plots.nom:28s} {conforme(marge[critere_limitant]):12s} limité par : {critere_limitant:28s}"
-                      f" pire carte = {rapport_cartes:.1f} x châssis")
-    conformes = [indice for indice in range(len(OPTIONS_PLOTS)) if min(marges[indice].values()) >= 0]
-    if conformes:
-        plus_grande_marge = max(conformes, key=lambda indice: min(marges[indice].values()))
-        cartes_protegees = min(conformes, key=lambda indice: max(reponses[indice]["grms"][1:]))
-        lignes += [
-            f"  -> Plus grande marge             : {OPTIONS_PLOTS[plus_grande_marge].nom}",
-            f"  -> Cartes les mieux protégées    : {OPTIONS_PLOTS[cartes_protegees].nom}",
-            "  Le choix final est un compromis : protéger les cartes (plots souples et amortis)",
-            "  sans dépasser le jeu disponible autour du caisson (débattement).",
-        ]
-    lignes += [
-        "  Limites : 1 axe vertical, cartes = masses ponctuelles, antenne et mât non modélisés,",
-        "  profil de piste illustratif. À confirmer par un modèle éléments finis et des mesures sur camion.",
-    ]
-    return "\n".join(lignes)
+    for (nom_plots, _, _), (T, grms, pire, limitant) in zip(options_plots, resultats):
+        lignes.append(f"  {nom_plots:28s} {verdict(pire):12s} limité par : {limitant:28s}"
+                      f" pire carte = {max(grms[1:]) / grms_chassis:.1f} x châssis")
+    conformes = [i for i in range(len(options_plots)) if resultats[i][2] >= 0]
+    meilleure_marge = max(conformes, key=lambda i: resultats[i][2])
+    mieux_protegees = min(conformes, key=lambda i: max(resultats[i][1][1:]))
+    lignes += [f"  -> Plus grande marge          : {options_plots[meilleure_marge][0]}",
+               f"  -> Cartes les mieux protégées : {options_plots[mieux_protegees][0]}",
+               "  Le choix final est un compromis : protéger les cartes (plots souples et amortis)",
+               "  sans dépasser le jeu disponible autour du caisson (débattement).",
+               "  Limites : 1 axe vertical, cartes = masses ponctuelles, antenne et mât non modélisés,",
+               "  profil de piste illustratif. À confirmer par éléments finis et mesures sur camion."]
+    rapport = "\n".join(lignes)
+    print(rapport)
+    dossier = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resultats")
+    os.makedirs(dossier, exist_ok=True)
+    with open(os.path.join(dossier, "radar_camion_rapport.txt"), "w", encoding="utf-8") as fichier:
+        fichier.write(rapport)
 
-
-def tracer_synthese(dsp_entree, grms_chassis, reponses, marges, chemin: str) -> None:
+    # figure de synthèse
+    noms = [o[0] for o in options_plots]
     figure, axes = plt.subplots(2, 2, figsize=(15, 9.5))
-    frequences = FREQUENCES_HZ
+    dans_profil = dsp > 0
+    axes[0, 1].loglog(f[dans_profil], dsp[dans_profil], "k", lw=2.5, label=f"Châssis {grms_chassis:.2f} Grms")
+    for nom, (T, grms, pire, limitant) in zip(noms, resultats):
+        axes[0, 0].loglog(f, abs(T[:, 0]), label=nom)
+        axes[0, 1].loglog(f[dans_profil], (abs(T[:, 0]) ** 2 * dsp)[dans_profil],
+                          label=f"Caisson, {nom} : {grms[0]:.2f} Grms")
+    axes[0, 0].axhline(1, color="grey", ls="--")
+    axes[0, 0].axvspan(10, 40, color="tab:red", alpha=0.08, label="Zone d'énergie de la piste")
+    axes[0, 0].set(title="Transmissibilité châssis -> caisson", xlabel="Fréquence [Hz]", xlim=(2, 1000))
+    axes[0, 1].set(title="DSP d'accélération du caisson [g²/Hz]", xlabel="Fréquence [Hz]")
+    for axe in axes[0]:
+        axe.legend(fontsize=8)
+        axe.grid(True, which="both", alpha=0.3)
 
-    axe = axes[0, 0]
-    for plots, reponse in zip(OPTIONS_PLOTS, reponses, strict=True):
-        axe.loglog(frequences, reponse["transmissibilite_caisson"], label=plots.nom)
-    axe.axhline(1, color="grey", ls="--")
-    axe.axvspan(PROFIL_FREQUENCES_HZ[1], PROFIL_FREQUENCES_HZ[2], color="tab:red", alpha=0.08,
-                label="Zone d'énergie de la piste")
-    axe.set(title="Transmissibilité châssis -> caisson", xlabel="Fréquence [Hz]", xlim=(2, 1000))
-    axe.legend(fontsize=8)
-    axe.grid(True, which="both", alpha=0.3)
+    etages = ["Châssis", "Caisson"] + [c[0] for c in cartes]
+    for numero, (nom, (T, grms, pire, limitant)) in enumerate(zip(noms, resultats)):
+        axes[1, 0].bar(np.arange(len(etages)) + (numero - 1.5) * 0.2, [grms_chassis] + grms, width=0.2, label=nom)
+    axes[1, 0].set_xticks(np.arange(len(etages)), etages, fontsize=9)
+    axes[1, 0].set(title="Niveau reçu à chaque étage de la chaîne", ylabel="Grms")
+    axes[1, 0].legend(fontsize=8)
+    axes[1, 0].grid(True, axis="y", alpha=0.3)
 
-    axe = axes[0, 1]
-    dans_profil = dsp_entree > 0
-    axe.loglog(frequences[dans_profil], dsp_entree[dans_profil], "k", lw=2.5, label=f"Châssis {grms_chassis:.2f} Grms")
-    for plots, reponse in zip(OPTIONS_PLOTS, reponses, strict=True):
-        axe.loglog(frequences[dans_profil], reponse["dsp_sortie"][dans_profil, 0],
-                   label=f"Caisson, {plots.nom} : {reponse['grms'][0]:.2f} Grms")
-    axe.set(title="DSP d'accélération du caisson [g²/Hz]", xlabel="Fréquence [Hz]")
-    axe.legend(fontsize=8)
-    axe.grid(True, which="both", alpha=0.3)
-
-    axe = axes[1, 0]
-    etages = ["Châssis", "Caisson"] + [carte.nom for carte in CARTES]
-    largeur = 0.8 / len(OPTIONS_PLOTS)
-    for numero, (plots, reponse) in enumerate(zip(OPTIONS_PLOTS, reponses, strict=True)):
-        positions = np.arange(len(etages)) + (numero - (len(OPTIONS_PLOTS) - 1) / 2) * largeur
-        axe.bar(positions, [grms_chassis] + reponse["grms"], width=largeur, label=plots.nom)
-    axe.set_xticks(np.arange(len(etages)), etages, fontsize=9)
-    axe.set(title="Niveau reçu à chaque étage de la chaîne", ylabel="Grms")
-    axe.legend(fontsize=8)
-    axe.grid(True, axis="y", alpha=0.3)
-
-    axe = axes[1, 1]
-    pires_marges = [min(marge.values()) for marge in marges]
-    axe.barh([plots.nom for plots in OPTIONS_PLOTS], pires_marges,
-             color=["tab:green" if marge >= 0 else "tab:red" for marge in pires_marges])
-    axe.axvline(0, color="k")
-    axe.set(title="Pire marge de sécurité de chaque choix (MS >= 0 : conforme)", xlabel="MS min")
+    pires = [r[2] for r in resultats]
+    axes[1, 1].barh(noms, pires, color=["tab:green" if p >= 0 else "tab:red" for p in pires])
+    axes[1, 1].axvline(0, color="k")
+    axes[1, 1].set(title="Pire marge de sécurité de chaque choix (MS >= 0 : conforme)", xlabel="MS min")
 
     figure.suptitle("Radar sur camion : choix des plots du caisson électronique (valeurs illustratives)")
     figure.tight_layout()
-    figure.savefig(chemin, dpi=150)
-
-
-def main() -> None:
-    dossier = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resultats")
-    os.makedirs(dossier, exist_ok=True)
-
-    dsp_entree = calculer_dsp_entree(FREQUENCES_HZ)
-    grms_chassis = calculer_rms(dsp_entree, FREQUENCES_HZ)
-    reponses = [calculer_reponse(plots, FREQUENCES_HZ, dsp_entree) for plots in OPTIONS_PLOTS]
-    marges = [calculer_marges(reponse) for reponse in reponses]
-
-    rapport = ecrire_rapport(grms_chassis, reponses, marges)
-    print(rapport)
-    with open(os.path.join(dossier, "radar_camion_rapport.txt"), "w", encoding="utf-8") as fichier:
-        fichier.write(rapport)
-    tracer_synthese(dsp_entree, grms_chassis, reponses, marges, os.path.join(dossier, "radar_camion.png"))
+    figure.savefig(os.path.join(dossier, "radar_camion.png"), dpi=150)
     plt.show()
-
-
-if __name__ == "__main__":
-    main()

@@ -24,13 +24,13 @@ Un caisson électronique posé sur des **silentblocs**, avec une **carte électr
 | `maquette.cpp` | Le même calcul que `maquette.py` en C++, pour montrer les bases du C++. |
 | `resultats/` | Les sorties, recréées à chaque lancement. |
 
-Le code suit le style du cours [ceriam.net](https://ceriam.net/) :
-- des noms explicites, sans variable d'une seule lettre, avec un verbe pour chaque fonction ;
-- des constantes en MAJUSCULES ;
-- des `@dataclass` (`Etage`, `Resultat`) pour regrouper les données ;
-- des annotations de type ;
-- une exception `DonneeInvalide`, levée si une donnée n'a pas de sens physique ;
-- une `seed` pour que le hasard soit le même à chaque lancement.
+Le code est volontairement **le plus simple possible** :
+- seulement `numpy` et `matplotlib` ;
+- les données sont de simples listes en haut du fichier, par exemple `caisson = [masse, fréquence, amortissement]` ;
+- une seule fonction de calcul, `reponse()`, qui construit les matrices M, K, C et résout le système à chaque fréquence ;
+- le reste du fichier se lit de haut en bas : calcul, note de calcul, figure.
+
+Le calcul tient en une ligne : `(K − ω²M + iωC) z = −M·1·a`, résolue à chaque fréquence.
 
 ## Lancer
 
@@ -56,14 +56,14 @@ g++ -O2 -o maquette.exe maquette.cpp
 maquette.exe
 ```
 
-Pour essayer d'autres valeurs (masse, fréquence, amortissement, profil), modifie la partie `1. DONNÉES D'ENTRÉE` en haut de `maquette.py`, puis relance.
+Pour essayer d'autres valeurs (masse, fréquence, amortissement, profil), modifie la partie `1. DONNÉES` en haut de `maquette.py`, puis relance.
 
 ## Ce que le programme sort (ce qu'un bureau d'études veut voir)
 
 1. **`rapport.txt`** : une note de calcul avec six parties :
    - les hypothèses ;
-   - les modes propres (fréquence, masse effective, déformée) ;
-   - la réponse aléatoire (Grms, amplification Q) ;
+   - les fréquences propres ;
+   - les niveaux reçus (Grms, amplification maximale) ;
    - les critères avec leurs marges ;
    - la sensibilité ;
    - la vérification du code.
@@ -72,9 +72,8 @@ Pour essayer d'autres valeurs (masse, fréquence, amortissement, profil), modifi
    - les DSP d'entrée et de sortie ;
    - les marges du cas nominal ;
    - la pire marge de chaque cas de sensibilité.
-3. **`courbes.csv`** : les courbes en colonnes, à ouvrir dans Excel (séparateur `;`).
 
-**Les trois critères vérifiés.** Pour chacun, on calcule une marge de sécurité **MS = admissible / calculé − 1**. Le critère est conforme si MS ≥ 0.
+**Les trois critères vérifiés.** Pour chacun, on calcule une marge de sécurité **MS = admissible / calculé − 1** (pour la séparation des modes, qui est un minimum : calculé / minimum − 1). Le critère est conforme si MS ≥ 0.
 
 | Critère | Question posée |
 |---|---|
@@ -171,7 +170,7 @@ La méthode reprend le cours (*Forward Neural Network → Loss / Training*) :
 |---|---|
 | Paramètres θ | fréquence et amortissement des silentblocs (normalisés autour de 1) |
 | Perte J (MSE avec le facteur ½) | écart entre la transmissibilité du modèle et celle mesurée (en log) |
-| Descente de gradient θ ← θ − α∇J | `recaler()`, avec un pas α = 0,5 |
+| Descente de gradient θ ← θ − α∇J | la boucle `for` du fichier, avec un pas α = 0,5 |
 | Critère d'arrêt ‖α∇J‖ < ε | ε = 10⁻⁷ |
 | Jeu d'entraînement / jeu de test | 70 % des points servent à recaler, 30 % à juger le résultat |
 | Graine (`seed`) | le bruit de mesure est le même à chaque lancement |
