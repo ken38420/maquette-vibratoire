@@ -3,32 +3,34 @@ NOTE DE CALCUL - MAQUETTE VIBRATOIRE (valeurs illustratives)
 
 1. HYPOTHÈSES
    Caisson : 25.0 kg sur silentblocs à 25.0 Hz, amortissement 10%
-   Carte   : 0.3 kg, fréquence propre 200.0 Hz, amortissement 3%
+   Carte   : 0.25 kg, fréquence propre 200.0 Hz, amortissement 3%
    Entrée  : 20-2000 Hz, 6.06 Grms, 1 axe vertical
    Modèle  : 2 masses ponctuelles, ressorts et amortisseurs linéaires
+   Critères: débattement en 4σ (plus grand pic sur 1 h d'essai), flexion de la carte
+             en 3σ au centre de la carte (Steinberg, C = 1, r = 1)
 
-2. FRÉQUENCES PROPRES : 25.0 Hz et 201.2 Hz
+2. FRÉQUENCES PROPRES : 25.0 Hz et 201.0 Hz
 
 3. NIVEAUX REÇUS
    Caisson : 1.47 Grms (amplification max x5.1)
    Carte   : 1.56 Grms (amplification max x5.2)
 
 4. CRITÈRES (marge de sécurité MS, conforme si MS >= 0)
-   Séparation des modes f2/f1           calculé   8.049  limite   2.000  MS =  +3.02  OK
-   Débattement silentblocs 3σ [mm]      calculé   1.706  limite   5.000  MS =  +1.93  OK
-   Flexion carte 3σ [mm] (Steinberg)    calculé   0.029  limite   0.563  MS = +18.38  OK
+   Séparation des modes f2/f1           calculé   8.041  limite   2.000  MS =  +3.02  OK
+   Débattement silentblocs 4σ [mm]      calculé   2.274  limite   5.000  MS =  +1.20  OK
+   Flexion carte 3σ [mm] (Steinberg)    calculé   0.047  limite   0.451  MS =  +8.56  OK
 
 5. SENSIBILITÉ (pire marge des 3 critères)
-   Nominal                              f1 =  25.0 Hz  MS min =  +1.93  OK
-   Chaud : silentblocs -30 % raideur    f1 =  20.9 Hz  MS min =  +1.88  OK
-   Froid : silentblocs +50 % raideur    f1 =  30.6 Hz  MS min =  +2.29  OK
-   Amortissement faible (5 %)           f1 =  25.0 Hz  MS min =  +0.98  OK
-   Amortissement fort (20 %)            f1 =  25.0 Hz  MS min =  +3.02  OK
+   Nominal                              f1 =  25.0 Hz  MS min =  +1.20  OK
+   Chaud : silentblocs -30 % raideur    f1 =  20.9 Hz  MS min =  +1.16  OK
+   Froid : silentblocs +50 % raideur    f1 =  30.6 Hz  MS min =  +1.60  OK
+   Amortissement faible (5 %)           f1 =  25.0 Hz  MS min =  +0.49  OK
+   Amortissement fort (20 %)            f1 =  25.0 Hz  MS min =  +2.37  OK
 
 6. VÉRIFICATION DU CODE
    Oscillateur simple sous bruit blanc / solution exacte : écart 3.2e-05  OK
 
 CONCLUSION
-   Pire cas : Amortissement faible (5 %) (MS = +0.98) -> OK
+   Pire cas : Amortissement faible (5 %) (MS = +0.49) -> OK
    Limites : 1 axe, masses ponctuelles, élastomère linéaire. À confirmer par un modèle
    éléments finis puis par un essai au pot vibrant (voir recalage.py).

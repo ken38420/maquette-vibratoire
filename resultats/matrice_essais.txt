@@ -1,0 +1,30 @@
+MATRICE D'ESSAIS : MUTUALISATION DE LA QUALIFICATION (valeurs illustratives)
+===========================================================================
+
+Projets : Radar fixe en shelter, Radar sur camion, Version aérotransportable
+Preuve existante : Caisson de la génération précédente
+
+Environnement              Norme                             Enveloppe  Décision
+Vibration aléatoire        AECTP-400 m. 401                    2.5 Grms  Essai enveloppe à faire
+Choc                       AECTP-400 m. 403                     30 g     Similitude : preuve réutilisée
+Chaleur (en marche)        AECTP-300 m. 302                     55 °C    Similitude : preuve réutilisée
+Froid (en marche)          AECTP-300 m. 303                    -46 °C    Essai enveloppe à faire
+Chaleur humide             AECTP-300 m. 306                     10 jours Similitude : preuve réutilisée
+Brouillard salin           AECTP-300 m. 309                     96 h     Essai enveloppe à faire
+CEM rayonnée               AECTP-500 / 461 RS103               200 V/m   Essai enveloppe à faire
+Feu                        hors AECTP                          oui       Essai enveloppe à faire
+
+Essais sans mutualisation (un par projet) : 20
+Essais avec mutualisation (enveloppe + similitude) : 5
+  -> 15 essais évités
+
+Séquence conseillée sur une seule éprouvette (le feu se fait à part : essai destructif) :
+  1. Vibration aléatoire (AECTP-400 m. 401) à 2.5 Grms
+  2. CEM rayonnée (AECTP-500 / 461 RS103) à 200 V/m
+  3. Froid (en marche) (AECTP-300 m. 303) à -46 °C
+  4. Brouillard salin (AECTP-300 m. 309) à 96 h
+
+Critère de réussite de chaque essai : le produit fonctionne avant, pendant et après
+l'essai, sans dégradation visible ; ce critère est écrit AVANT l'essai, dans le plan d'essais.
+Attention : l'enveloppe est conservative. Si un projet est beaucoup moins sévère que les autres,
+le sur-tester peut coûter plus cher (surdimensionnement) qu'un essai dédié.

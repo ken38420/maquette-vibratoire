@@ -24,7 +24,7 @@ from radar_camion import cartes, frequence_carte, options_plots, reponse
 from visualisation_3d import dessiner_boite, dessiner_ressort
 
 try:  # dans Spyder (IPython) : fenêtre séparée, sinon l'animation reste figée dans le panneau Graphiques
-    get_ipython().run_line_magic("matplotlib", "qt")  # noqa: F821
+    get_ipython().run_line_magic("matplotlib", "qt")  # get_ipython n'existe que dans Spyder / IPython
 except NameError:
     pass
 
@@ -106,6 +106,7 @@ def dessiner_scene(axe, phase, indice_plots, frequence_Hz):
 
 
 def main():
+    plt.close("all")  # ferme l'animation précédente si on relance F5 (sinon plusieurs tournent et tout se fige)
     figure = plt.figure(figsize=(12, 8))
     axe = figure.add_axes([0.22, 0.12, 0.78, 0.85], projection="3d")
     curseur = Slider(figure.add_axes([0.3, 0.04, 0.55, 0.03]), "Fréquence [Hz]", 3, 300, valinit=25.0)
@@ -120,12 +121,14 @@ def main():
         dessiner_scene(axe, phase, indice_plots, curseur.val)
 
     # garder une référence à l'animation, sinon Python l'efface et elle s'arrête
-    figure.animation = FuncAnimation(figure, mettre_a_jour, frames=NB_IMAGES_PAR_PERIODE, interval=60)
+    figure.animation = FuncAnimation(figure, mettre_a_jour, frames=NB_IMAGES_PAR_PERIODE, interval=90)  # 90 ms par image
     plt.show()
 
 
 def enregistrer_gif(indice_plots, frequence_Hz, chemin):
-    """enregistre une période d'animation en GIF (pour le README)"""
+    """enregistre une période d'animation en GIF (pour le README).
+    À taper dans la console après F5, par exemple :
+    enregistrer_gif(1, 25, "resultats/radar_plots25Hz_25Hz.gif")   (1 = plots standard 25 Hz)"""
     figure = plt.figure(figsize=(9, 6.5))
     axe = figure.add_subplot(projection="3d")
     animation = FuncAnimation(

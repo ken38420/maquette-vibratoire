@@ -14,11 +14,12 @@ const double g = 9.81;
 
 // ---------- Données d'entrée (valeurs illustratives) ----------
 const double m1 = 25.0, f1 = 25.0, z1 = 0.10;   // caisson : masse [kg], fréquence [Hz], amortissement
-const double m2 = 0.30, f2 = 200.0, z2 = 0.03;  // carte
+const double m2 = 0.25, f2 = 200.0, z2 = 0.03;  // carte
 const double profil_f[4] = {20, 80, 350, 2000}; // profil d'entrée : fréquences [Hz]
 const double profil_S[4] = {0.01, 0.04, 0.04, 0.007};  // DSP [g²/Hz]
 const double jeu_mm = 5.0;                      // débattement disponible [mm]
-const double B = 160.0, h = 1.6, L = 25.0;      // carte pour Steinberg [mm]
+const double B = 160.0, h = 2.0, L = 25.0;      // carte pour Steinberg [mm]
+const double FACTEUR_CENTRE = 16 / (PI * PI);   // flexion au centre de la plaque / flexion de la masse
 
 // DSP d'entrée : droite entre deux points du profil sur un graphe log-log
 double dsp(double f) {
@@ -69,7 +70,8 @@ int main() {
         f_prec = f;
         for (int j = 0; j < 5; j++) s_prec[j] = s[j];
     }
-    double debat = 3 * std::sqrt(aire_debat) * 1000, drel = 3 * std::sqrt(aire_drel) * 1000;  // 3σ [mm]
+    double debat = 4 * std::sqrt(aire_debat) * 1000;                       // débattement 4σ [mm]
+    double drel = FACTEUR_CENTRE * 3 * std::sqrt(aire_drel) * 1000;        // flexion au centre 3σ [mm]
 
     // Critère de Steinberg (formule en pouces)
     double po = 25.4, z_adm = 0.00022 * (B / po) / ((h / po) * std::sqrt(L / po)) * po;
@@ -80,7 +82,7 @@ int main() {
     std::printf("Carte           : %.2f Grms\n", std::sqrt(aire_carte));
     std::printf("Marges de securite (MS >= 0 : conforme)\n");
     std::printf("  Separation des modes : %.2f\n", (fm2 / fm1) / 2.0 - 1);
-    std::printf("  Debattement 3s       : %.3f mm / %.1f mm -> MS = %.2f\n", debat, jeu_mm, jeu_mm / debat - 1);
+    std::printf("  Debattement 4s       : %.3f mm / %.1f mm -> MS = %.2f\n", debat, jeu_mm, jeu_mm / debat - 1);
     std::printf("  Carte 3s (Steinberg) : %.3f mm / %.3f mm -> MS = %.2f\n", drel, z_adm, z_adm / drel - 1);
     return 0;
 }

@@ -11,6 +11,8 @@ Méthode du cours (réseaux de neurones > perte et entraînement) :
   - 70 % des mesures servent à recaler, 30 % à vérifier (jeu de test)
 
 L'essai est SIMULÉ : on part d'un "vrai" caisson caché et on ajoute 5 % de bruit.
+Limite honnête : les points de test viennent du même balayage que ceux d'entraînement.
+Une vraie validation se ferait sur un AUTRE essai (autre niveau, autre axe, autre exemplaire).
 """
 
 import os
@@ -60,7 +62,7 @@ for iteration in range(2000):
     pas = alpha * gradient(p, f_essai[entr], mesures[entr])
     p = p - pas
     historique.append(perte(p, f_essai[entr], mesures[entr]))
-    if np.linalg.norm(pas) < 1e-7:
+    if np.linalg.norm(pas) < 1e-7:  # critère d'arrêt : le pas est devenu minuscule
         break
 
 initial, recale = vers_caisson(p_initial), vers_caisson(p)
@@ -80,12 +82,14 @@ axes[0].loglog(f_essai[entr], mesures[entr], "o", label="Mesures (entraînement)
 axes[0].loglog(f_essai[test], mesures[test], "s", mfc="none", label="Mesures (test)")
 axes[0].loglog(f_fin, predire(p_initial, f_fin), "--", label="Modèle fiche technique")
 axes[0].loglog(f_fin, predire(p, f_fin), "k", label="Modèle recalé")
-axes[0].set(title="Transmissibilité du caisson : essai et modèle", xlabel="Fréquence [Hz]")
+axes[0].set(title="Transmissibilité du caisson : essai et modèle", xlabel="Fréquence [Hz]", ylabel="|T| [-]")
 axes[0].legend()
 axes[0].grid(True, which="both", alpha=0.3)
 axes[1].semilogy(historique)
 axes[1].set(title="Descente de gradient : perte J à chaque itération", xlabel="Itération", ylabel="J")
 axes[1].grid(True, which="both", alpha=0.3)
 figure.tight_layout()
-figure.savefig(os.path.join(os.path.dirname(os.path.abspath(__file__)), "resultats", "recalage.png"), dpi=150)
+dossier = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resultats")
+os.makedirs(dossier, exist_ok=True)  # crée le dossier s'il n'existe pas encore
+figure.savefig(os.path.join(dossier, "recalage.png"), dpi=150)
 plt.show()

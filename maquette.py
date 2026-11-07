@@ -18,13 +18,19 @@ G = 9.81  # gravité [m/s²]
 
 # ---------------- 1. DONNÉES (à modifier ici) ----------------
 caisson = [25.0, 25.0, 0.10]  # [masse kg, fréquence Hz, amortissement] du caisson sur ses silentblocs
-carte = [0.30, 200.0, 0.03]  # [masse kg, fréquence Hz, amortissement] de la carte dans le caisson
+carte = [0.25, 200.0, 0.03]  # [masse kg, fréquence Hz, amortissement] de la carte dans le caisson
+# (carte 160 x 100 x 2,0 mm de 0,25 kg : la formule de plaque de radar_camion.py donne 196 Hz, arrondi à 200)
 
 profil_f = [20, 80, 350, 2000]  # profil de vibration d'entrée : fréquences [Hz]
 profil_dsp = [0.01, 0.04, 0.04, 0.007]  # et DSP [g²/Hz] (droites sur un graphe log-log)
 
 jeu_mm = 5.0  # place disponible autour du caisson [mm]
-bord, epaisseur, composant = 160 / 25.4, 1.6 / 25.4, 25 / 25.4  # carte, en pouces (pour Steinberg)
+# carte pour Steinberg, en POUCES (la formule est en pouces) : longueur du bord, épaisseur, longueur du composant
+bord, epaisseur, longueur_composant = 160 / 25.4, 2.0 / 25.4, 25 / 25.4
+
+# La carte est réduite à UNE masse sur UN ressort : cela donne son déplacement "moyen" (modal).
+# Au centre d'une plaque en appui sur ses 4 bords, la flexion est 16/π² ≈ 1,62 fois plus grande.
+FACTEUR_CENTRE = 16 / np.pi**2
 
 f = np.geomspace(1, 3000, 20000)  # fréquences de calcul [Hz]
 
@@ -67,12 +73,17 @@ def marges(caisson):
     """les 3 critères : [nom, valeur calculée, limite, marge de sécurité MS] (conforme si MS >= 0)"""
     modes, z, T = reponse(caisson, carte, f)
     dsp = dsp_profil(f)
-    debattement = 3 * rms(abs(z[:, 0]) ** 2 * dsp * G**2, f) * 1000  # 3σ [mm]
-    flexion = 3 * rms(abs(z[:, 1] - z[:, 0]) ** 2 * dsp * G**2, f) * 1000  # carte / caisson, 3σ [mm]
-    admissible = 0.00022 * bord / (epaisseur * np.sqrt(composant)) * 25.4  # Steinberg [mm]
+    # z est en mètres PAR g d'entrée, et la DSP est en g²/Hz : |z|² x DSP x G² donne des m²/Hz
+    # débattement : 4σ, car sur une heure d'essai le plus grand pic atteint environ 4σ (loi de Rayleigh)
+    debattement = 4 * rms(abs(z[:, 0]) ** 2 * dsp * G**2, f) * 1000  # [mm]
+    # flexion de la carte par rapport au caisson, au centre de la carte, 3σ (convention de Steinberg)
+    flexion = FACTEUR_CENTRE * 3 * rms(abs(z[:, 1] - z[:, 0]) ** 2 * dsp * G**2, f) * 1000  # [mm]
+    # Steinberg : Z = 0,00022 B / (C h r √L) en pouces, pour environ 20 millions d'alternances.
+    # Ici C = 1 (composant à broches) et r = 1 (composant au centre, le cas le plus sévère).
+    admissible = 0.00022 * bord / (epaisseur * np.sqrt(longueur_composant)) * 25.4  # [mm]
     separation = modes[1] / modes[0]  # règle de l'octave : au moins 2 (c'est un MINIMUM)
     return [["Séparation des modes f2/f1", separation, 2.0, separation / 2.0 - 1],
-            ["Débattement silentblocs 3σ [mm]", debattement, jeu_mm, jeu_mm / debattement - 1],
+            ["Débattement silentblocs 4σ [mm]", debattement, jeu_mm, jeu_mm / debattement - 1],
             ["Flexion carte 3σ [mm] (Steinberg)", flexion, admissible, admissible / flexion - 1]]
 
 
@@ -100,10 +111,12 @@ if __name__ == "__main__":
 
     # vérification du code : carte presque sans masse -> oscillateur simple sous bruit blanc,
     # dont la réponse exacte est connue : Grms² = S0·π·fn·(1+4ζ²)/(4ζ)
+    # (Miles est l'approximation de cette formule pour ζ petit : Grms² ≈ π/2 · fn · Q · S0, avec Q = 1/2ζ)
+    S0, fn, zeta = 0.01, 100.0, 0.05  # bruit blanc [g²/Hz], fréquence [Hz], amortissement
     f_test = np.geomspace(0.1, 1e5, 100000)
-    T_test = reponse([1.0, 100.0, 0.05], [1e-6, 1000.0, 0.05], f_test)[2]
-    exact = np.sqrt(0.01 * np.pi * 100 * (1 + 4 * 0.05**2) / (4 * 0.05))
-    ecart = abs(rms(abs(T_test[:, 0]) ** 2 * 0.01, f_test) / exact - 1)
+    T_test = reponse([1.0, fn, zeta], [1e-6, 1000.0, zeta], f_test)[2]
+    exact = np.sqrt(S0 * np.pi * fn * (1 + 4 * zeta**2) / (4 * zeta))
+    ecart = abs(rms(abs(T_test[:, 0]) ** 2 * S0, f_test) / exact - 1)
     assert ecart < 1e-3, "le code ne retrouve pas la solution exacte"
 
     # note de calcul
@@ -112,7 +125,9 @@ if __name__ == "__main__":
               f"   Caisson : {caisson[0]} kg sur silentblocs à {caisson[1]} Hz, amortissement {caisson[2]:.0%}",
               f"   Carte   : {carte[0]} kg, fréquence propre {carte[1]} Hz, amortissement {carte[2]:.0%}",
               f"   Entrée  : {profil_f[0]}-{profil_f[-1]} Hz, {grms_entree:.2f} Grms, 1 axe vertical",
-              "   Modèle  : 2 masses ponctuelles, ressorts et amortisseurs linéaires", "",
+              "   Modèle  : 2 masses ponctuelles, ressorts et amortisseurs linéaires",
+              "   Critères: débattement en 4σ (plus grand pic sur 1 h d'essai), flexion de la carte",
+              "             en 3σ au centre de la carte (Steinberg, C = 1, r = 1)", "",
               f"2. FRÉQUENCES PROPRES : {modes[0]:.1f} Hz et {modes[1]:.1f} Hz", "",
               "3. NIVEAUX REÇUS",
               f"   Caisson : {grms_caisson:.2f} Grms (amplification max x{abs(T[:, 0]).max():.1f})",
@@ -141,24 +156,32 @@ if __name__ == "__main__":
     axes[0, 0].loglog(f, abs(T[:, 0]), label="Caisson")
     axes[0, 0].loglog(f, abs(T[:, 1]), label="Carte")
     axes[0, 0].axhline(1, color="grey", ls="--")
-    axes[0, 0].set(title="Transmissibilité (sortie / entrée)", xlabel="Fréquence [Hz]", xlim=(5, 2000))
+    axes[0, 0].set(title="Transmissibilité (sortie / entrée)", xlabel="Fréquence [Hz]",
+                   ylabel="|T| [-]", xlim=(5, 2000))
 
     dans_profil = dsp > 0
     axes[0, 1].loglog(f[dans_profil], dsp[dans_profil], "k", lw=2, label=f"Entrée {grms_entree:.2f} Grms")
     axes[0, 1].loglog(f[dans_profil], (abs(T[:, 0]) ** 2 * dsp)[dans_profil], label=f"Caisson {grms_caisson:.2f} Grms")
     axes[0, 1].loglog(f[dans_profil], (abs(T[:, 1]) ** 2 * dsp)[dans_profil], label=f"Carte {grms_carte:.2f} Grms")
-    axes[0, 1].set(title="DSP d'accélération [g²/Hz]", xlabel="Fréquence [Hz]")
+    axes[0, 1].set(title="DSP d'accélération", xlabel="Fréquence [Hz]", ylabel="DSP [g²/Hz]", ylim=(1e-6, 1))
     for axe in axes[0]:
         axe.legend()
         axe.grid(True, which="both", alpha=0.3)
 
-    for axe, noms, valeurs, titre in [
-        (axes[1, 0], [c[0] for c in criteres], [c[3] for c in criteres], "Marges, cas nominal (MS >= 0 : conforme)"),
-        (axes[1, 1], [c[0] for c in cas], pires_ms, "Sensibilité : pire marge de chaque cas"),
-    ]:
-        axe.barh(noms, valeurs, color=["tab:green" if v >= 0 else "tab:red" for v in valeurs])
-        axe.axvline(0, color="k")
-        axe.set(title=titre, xlabel="MS")
+    # marges du cas nominal (vert = conforme, rouge = non conforme), valeur écrite au bout de chaque barre
+    ms_nominal = [c[3] for c in criteres]
+    barres = axes[1, 0].barh([c[0] for c in criteres], ms_nominal,
+                             color=["tab:green" if v >= 0 else "tab:red" for v in ms_nominal])
+    axes[1, 0].bar_label(barres, fmt="%+.2f", padding=3)
+    axes[1, 0].axvline(0, color="k")
+    axes[1, 0].set(title="Marges, cas nominal (MS >= 0 : conforme)", xlabel="MS", xlim=(min(ms_nominal + [0]), max(ms_nominal) * 1.2))
+
+    # sensibilité : pire marge de chaque cas
+    barres = axes[1, 1].barh([c[0] for c in cas], pires_ms,
+                             color=["tab:green" if v >= 0 else "tab:red" for v in pires_ms])
+    axes[1, 1].bar_label(barres, fmt="%+.2f", padding=3)
+    axes[1, 1].axvline(0, color="k")
+    axes[1, 1].set(title="Sensibilité : pire marge de chaque cas", xlabel="MS min", xlim=(min(pires_ms + [0]), max(pires_ms) * 1.2))
     figure.suptitle("Maquette vibratoire : caisson sur silentblocs + carte (valeurs illustratives)")
     figure.tight_layout()
     figure.savefig(os.path.join(dossier, "synthese.png"), dpi=150)

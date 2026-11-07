@@ -21,7 +21,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from maquette import caisson, carte, reponse
 
 try:  # dans Spyder (IPython) : fenêtre séparée, sinon l'animation reste figée dans le panneau Graphiques
-    get_ipython().run_line_magic("matplotlib", "qt")  # noqa: F821
+    get_ipython().run_line_magic("matplotlib", "qt")  # get_ipython n'existe que dans Spyder / IPython
 except NameError:
     pass
 
@@ -101,6 +101,7 @@ def dessiner_scene(axe, phase, frequence_Hz):
 
 
 def main():
+    plt.close("all")  # ferme l'animation précédente si on relance F5 (sinon plusieurs tournent et tout se fige)
     figure = plt.figure(figsize=(9, 8))
     axe = figure.add_subplot(projection="3d")
     figure.subplots_adjust(bottom=0.12)
@@ -112,12 +113,14 @@ def main():
         dessiner_scene(axe, phase, curseur.val)
 
     # garder une référence à l'animation, sinon Python l'efface et elle s'arrête
-    figure.animation = FuncAnimation(figure, mettre_a_jour, frames=NB_IMAGES_PAR_PERIODE, interval=50)
+    figure.animation = FuncAnimation(figure, mettre_a_jour, frames=NB_IMAGES_PAR_PERIODE, interval=90)  # 90 ms par image
     plt.show()
 
 
 def enregistrer_gif(frequence_Hz, chemin):
-    """enregistre une période d'animation en GIF (pour le README)"""
+    """enregistre une période d'animation en GIF (pour le README).
+    À taper dans la console après F5, par exemple :
+    enregistrer_gif(25, "resultats/animation_25Hz.gif")"""
     figure = plt.figure(figsize=(7, 6.5))
     axe = figure.add_subplot(projection="3d")
     animation = FuncAnimation(figure, lambda numero: dessiner_scene(axe, 2 * np.pi * numero / NB_IMAGES_PAR_PERIODE,

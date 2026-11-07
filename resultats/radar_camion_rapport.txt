@@ -3,6 +3,8 @@ RADAR SUR CAMION : CHOIX DES PLOTS DU CAISSON (valeurs illustratives)
 
 Entrée : châssis sur piste, 5-500 Hz, 1.61 Grms
 Caisson : 40.0 kg + 3 cartes ; jeu disponible 10.0 mm
+Critères : débattement en 4σ, flexion des cartes en 3σ au centre (Steinberg),
+           1re carte au moins 2 fois au-dessus des plots (règle de l'octave)
 
 Cartes (plaques FR4 en appui simple, fréquence calculée ; admissible de Steinberg) :
     Carte alimentation   160x100x2.0 mm, 0.6 kg ->  127 Hz ; C = 1.0 -> admissible 0.411 mm
@@ -11,35 +13,39 @@ Cartes (plaques FR4 en appui simple, fréquence calculée ; admissible de Steinb
 
 --- Fixation rigide (150 Hz, amortissement 5%)
     Modes : 124, 136, 156, 257 Hz
-    Caisson : 2.52 Grms, débattement 3σ 0.1 mm  -> MS = +121.77  OK
-    Carte alimentation            9.51 Grms  flexion 3σ 0.442 mm  MS =  -0.07  NON CONFORME
-    Carte traitement             10.76 Grms  flexion 3σ 0.424 mm  MS =  -0.38  NON CONFORME
-    Carte RF                      3.76 Grms  flexion 3σ 0.043 mm  MS =  +2.26  OK
-    PIRE MARGE : -0.38 (Carte traitement)
+    Séparation 1re carte / plots : x0.84 (minimum x2)  -> MS = -0.58  NON CONFORME
+    Caisson : 2.52 Grms, débattement 4σ 0.1 mm  -> MS = +91.08  OK
+    Carte alimentation            9.51 Grms  flexion 3σ 0.716 mm  MS =  -0.43  NON CONFORME
+    Carte traitement             10.76 Grms  flexion 3σ 0.688 mm  MS =  -0.62  NON CONFORME
+    Carte RF                      3.76 Grms  flexion 3σ 0.070 mm  MS =  +1.01  OK
+    PIRE MARGE : -0.62 (Carte traitement)
 
 --- Plots standard 25 Hz (25 Hz, amortissement 10%)
     Modes : 25, 127, 138, 256 Hz
-    Caisson : 2.79 Grms, débattement 3σ 3.3 mm  -> MS = +2.06  OK
-    Carte alimentation            2.91 Grms  flexion 3σ 0.136 mm  MS =  +2.03  OK
-    Carte traitement              2.89 Grms  flexion 3σ 0.114 mm  MS =  +1.31  OK
-    Carte RF                      2.82 Grms  flexion 3σ 0.032 mm  MS =  +3.34  OK
-    PIRE MARGE : +1.31 (Carte traitement)
+    Séparation 1re carte / plots : x5.06 (minimum x2)  -> MS = +1.53  OK
+    Caisson : 2.79 Grms, débattement 4σ 4.4 mm  -> MS = +1.29  OK
+    Carte alimentation            2.91 Grms  flexion 3σ 0.220 mm  MS =  +0.87  OK
+    Carte traitement              2.89 Grms  flexion 3σ 0.185 mm  MS =  +0.43  OK
+    Carte RF                      2.82 Grms  flexion 3σ 0.052 mm  MS =  +1.68  OK
+    PIRE MARGE : +0.43 (Carte traitement)
 
 --- Plots souples 10 Hz (10 Hz, amortissement 10%)
     Modes : 10, 127, 138, 256 Hz
-    Caisson : 1.65 Grms, débattement 3σ 12.0 mm  -> MS = -0.17  NON CONFORME
-    Carte alimentation            1.66 Grms  flexion 3σ 0.077 mm  MS =  +4.31  OK
-    Carte traitement              1.66 Grms  flexion 3σ 0.066 mm  MS =  +3.03  OK
-    Carte RF                      1.65 Grms  flexion 3σ 0.019 mm  MS =  +6.41  OK
-    PIRE MARGE : -0.17 (Débattement caisson)
+    Séparation 1re carte / plots : x12.65 (minimum x2)  -> MS = +5.33  OK
+    Caisson : 1.65 Grms, débattement 4σ 16.0 mm  -> MS = -0.38  NON CONFORME
+    Carte alimentation            1.66 Grms  flexion 3σ 0.125 mm  MS =  +2.28  OK
+    Carte traitement              1.66 Grms  flexion 3σ 0.106 mm  MS =  +1.48  OK
+    Carte RF                      1.65 Grms  flexion 3σ 0.031 mm  MS =  +3.57  OK
+    PIRE MARGE : -0.38 (Débattement caisson)
 
 --- Plots souples 10 Hz amortis (10 Hz, amortissement 25%)
     Modes : 10, 127, 138, 256 Hz
-    Caisson : 1.06 Grms, débattement 3σ 6.9 mm  -> MS = +0.45  OK
-    Carte alimentation            1.08 Grms  flexion 3σ 0.050 mm  MS =  +7.19  OK
-    Carte traitement              1.08 Grms  flexion 3σ 0.042 mm  MS =  +5.21  OK
-    Carte RF                      1.06 Grms  flexion 3σ 0.012 mm  MS = +10.51  OK
-    PIRE MARGE : +0.45 (Débattement caisson)
+    Séparation 1re carte / plots : x12.65 (minimum x2)  -> MS = +5.33  OK
+    Caisson : 1.06 Grms, débattement 4σ 9.2 mm  -> MS = +0.09  OK
+    Carte alimentation            1.08 Grms  flexion 3σ 0.081 mm  MS =  +4.05  OK
+    Carte traitement              1.08 Grms  flexion 3σ 0.069 mm  MS =  +2.83  OK
+    Carte RF                      1.06 Grms  flexion 3σ 0.020 mm  MS =  +6.10  OK
+    PIRE MARGE : +0.09 (Débattement caisson)
 
 CONCLUSION
   Fixation rigide              NON CONFORME limité par : Carte traitement             pire carte = 6.7 x châssis
