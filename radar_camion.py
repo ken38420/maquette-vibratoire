@@ -182,43 +182,45 @@ if __name__ == "__main__":
     with open(os.path.join(dossier, "radar_camion_rapport.txt"), "w", encoding="utf-8") as fichier:
         fichier.write(rapport)
 
-    # figure de synthèse
+    # figure de synthèse : 3 images = ce que font les plots, ce que reçoit chaque étage, le verdict
     noms = [o[0] for o in options_plots]
-    figure, axes = plt.subplots(2, 2, figsize=(15, 9.5))
-    dans_profil = dsp > 0
-    axes[0, 1].loglog(f[dans_profil], dsp[dans_profil], "k", lw=2.5, label=f"Châssis {grms_chassis:.2f} Grms")
-    for nom, (T, grms, pire, limitant) in zip(noms, resultats):
-        axes[0, 0].loglog(f, abs(T[:, 0]), label=nom)
-        axes[0, 1].loglog(f[dans_profil], (abs(T[:, 0]) ** 2 * dsp)[dans_profil],
-                          label=f"Caisson, {nom} : {grms[0]:.2f} Grms")
-    axes[0, 0].axhline(1, color="grey", ls="--")
-    axes[0, 0].axvspan(profil_f[1], profil_f[2], color="tab:red", alpha=0.08, label="Zone d'énergie de la piste")
-    axes[0, 0].set(title="Transmissibilité châssis -> caisson", xlabel="Fréquence [Hz]", ylabel="|T| [-]",
-                   xlim=(2, 1000))
-    axes[0, 1].set(title="DSP d'accélération du caisson", xlabel="Fréquence [Hz]", ylabel="DSP [g²/Hz]")
-    for axe in axes[0]:
-        axe.legend(fontsize=8)
-        axe.grid(True, which="both", alpha=0.3)
+    figure, axes = plt.subplots(1, 3, figsize=(19, 5.8), gridspec_kw={"width_ratios": [1.4, 1.2, 1]})
 
+    # 1. transmissibilité châssis -> caisson : les plots filtrent (< 1) ou amplifient (> 1) ?
+    axe = axes[0]
+    for nom, (T, grms, pire, limitant) in zip(noms, resultats):
+        axe.loglog(f, abs(T[:, 0]), lw=2, label=nom)
+    axe.axhline(1, color="grey", ls="--")
+    axe.axvspan(profil_f[1], profil_f[2], color="tab:red", alpha=0.08)
+    axe.text(np.sqrt(profil_f[1] * profil_f[2]), 12, "zone où la piste\nsecoue le plus", ha="center", fontsize=9, color="tab:red")
+    axe.text(230, 8, "au-dessus de 1 : amplifie\nen dessous de 1 : isole", fontsize=9, color="grey")
+    axe.set(title="Les plots amplifient-ils ou isolent-ils ?", xlabel="Fréquence [Hz]",
+            ylabel="Mouvement du caisson / mouvement du châssis", xlim=(2, 1000), ylim=(5e-3, 30))
+    axe.legend(fontsize=8, loc="lower left")
+    axe.grid(True, which="both", alpha=0.3)
+
+    # 2. niveau (Grms) reçu par chaque étage de la chaîne, pour chaque choix de plots
     etages = ["Châssis", "Caisson"] + [c[0].replace("Carte ", "Carte\n") for c in cartes]
-    largeur = 0.8 / len(options_plots)  # les barres des options sont côte à côte, centrées sur chaque étage
+    largeur = 0.8 / len(options_plots)
     for numero, (nom, (T, grms, pire, limitant)) in enumerate(zip(noms, resultats)):
         decalage = (numero - (len(options_plots) - 1) / 2) * largeur
-        axes[1, 0].bar(np.arange(len(etages)) + decalage, [grms_chassis] + grms, width=largeur, label=nom)
-    axes[1, 0].set_xticks(np.arange(len(etages)), etages, fontsize=9)
-    axes[1, 0].set(title="Niveau reçu à chaque étage de la chaîne", ylabel="Grms")
-    axes[1, 0].legend(fontsize=8)
-    axes[1, 0].grid(True, axis="y", alpha=0.3)
+        axes[1].bar(np.arange(len(etages)) + decalage, [grms_chassis] + grms, width=largeur, label=nom)
+    axes[1].set_xticks(np.arange(len(etages)), etages, fontsize=9)
+    axes[1].set(title="Niveau de vibration reçu à chaque étage", ylabel="Niveau [Grms]")
+    axes[1].legend(fontsize=8)
+    axes[1].grid(True, axis="y", alpha=0.3)
 
+    # 3. verdict : la pire marge de chaque choix, et le critère qui limite
     pires = [r[2] for r in resultats]
-    barres = axes[1, 1].barh(noms, pires, color=["tab:green" if p >= 0 else "tab:red" for p in pires])
-    for ligne, (pire, r) in enumerate(zip(pires, resultats)):  # valeur et critère limitant, à droite de 0
-        axes[1, 1].text(max(pire, 0) + 0.03, ligne, f"{pire:+.2f}  ({r[3]})", va="center", fontsize=8)
-    axes[1, 1].axvline(0, color="k")
-    axes[1, 1].set_xlim(min(min(pires), 0) - 0.2, max(pires) + 1.0)  # place pour écrire le texte
-    axes[1, 1].set(title="Pire marge de sécurité de chaque choix (MS >= 0 : conforme)", xlabel="MS min")
+    barres = axes[2].barh(noms, pires, color=["tab:green" if p >= 0 else "tab:red" for p in pires])
+    for ligne, (pire, r) in enumerate(zip(pires, resultats)):
+        axes[2].text(max(pire, 0) + 0.03, ligne, f"{pire:+.2f}\n{r[3]}", va="center", fontsize=8)
+    axes[2].axvline(0, color="k")
+    axes[2].set_xlim(min(min(pires), 0) - 0.2, max(pires) + 0.9)
+    axes[2].set(title="Verdict : conforme si la marge > 0", xlabel="Pire marge de sécurité")
+    axes[2].invert_yaxis()
 
-    figure.suptitle("Radar sur camion : choix des plots du caisson électronique (valeurs illustratives)")
+    figure.suptitle("Radar sur camion : quels plots sous le caisson électronique ?  (valeurs illustratives)")
     figure.tight_layout()
     figure.savefig(os.path.join(dossier, "radar_camion.png"), dpi=150)
     plt.show()

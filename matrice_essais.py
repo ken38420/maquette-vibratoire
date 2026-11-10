@@ -123,32 +123,36 @@ if __name__ == "__main__":
     with open(os.path.join(dossier, "matrice_essais.txt"), "w", encoding="utf-8") as fichier:
         fichier.write(rapport)
 
-    # figure : la matrice (une ligne par projet, puis l'enveloppe et la preuve existante)
-    noms_lignes = [p[0] for p in projets] + ["ENVELOPPE", deja_qualifie[0]]
+    # figure : la matrice (une ligne par projet, puis l'enveloppe et la preuve existante) + le compte des essais
+    import matplotlib.patches as patches
+    noms_lignes = [p[0] for p in projets] + ["ENVELOPPE (le plus sévère)", deja_qualifie[0]]
     valeurs_lignes = [p[1] for p in projets] + [enveloppe, deja_qualifie[1]]
     couleurs = {"Pas d'exigence": 0, "Similitude : preuve réutilisée": 1, "Essai enveloppe à faire": 2}
-    # couleur de chaque colonne selon la décision (gris = rien, vert = similitude, orange = essai)
-    fond = np.array([[couleurs[d] for d in decision]] * len(noms_lignes))
+    fond = np.array([[couleurs[d] for d in decision]] * len(noms_lignes))  # une couleur par colonne = la décision
 
-    figure, (axe, axe_barres) = plt.subplots(1, 2, figsize=(16, 6), gridspec_kw={"width_ratios": [4, 1]})
+    figure, (axe, axe_barres) = plt.subplots(1, 2, figsize=(17, 6.5), gridspec_kw={"width_ratios": [4.5, 1]})
     axe.imshow(fond, cmap=plt.matplotlib.colors.ListedColormap(["#e0e0e0", "#a8dba8", "#f7c08a"]),
                vmin=0, vmax=2, aspect="auto")
     for i, valeurs in enumerate(valeurs_lignes):
         for j, valeur in enumerate(valeurs):
-            gras = "bold" if noms_lignes[i] == "ENVELOPPE" else "normal"
-            axe.text(j, i, texte(valeur), ha="center", va="center", fontweight=gras)
-    axe.set_xticks(range(len(environnements)),
-                   [f"{e[0]}\n[{e[2] or 'oui / non'}]\n{e[1]}" for e in environnements], fontsize=8)
+            gras = "bold" if i == len(projets) else "normal"
+            axe.text(j, i, texte(valeur) + (" " + environnements[j][2] if isinstance(valeur, (int, float)) and valeur is not True else ""), ha="center", va="center", fontweight=gras)
+    axe.set_xticks(range(len(environnements)), [e[0].replace(" (", "\n(") for e in environnements], fontsize=9)
     axe.set_yticks(range(len(noms_lignes)), noms_lignes)
     axe.axhline(len(projets) - 0.5, color="k", lw=2)  # trait entre les projets et l'enveloppe
-    axe.set_title("Exigences par projet -> enveloppe -> décision "
-                  "(orange : essai à faire, vert : preuve existante réutilisée, gris : pas d'exigence)", fontsize=9)
+    axe.axhline(len(projets) + 0.5, color="k", lw=1, ls="--")
+    axe.set_title("Exigences de chaque projet, enveloppe, et ce que l'ancien caisson a déjà tenu", fontsize=11)
+    axe.legend(handles=[patches.Patch(color="#f7c08a", label="essai à faire"),
+                        patches.Patch(color="#a8dba8", label="déjà prouvé : pas d'essai"),
+                        patches.Patch(color="#e0e0e0", label="pas d'exigence")],
+               loc="upper center", bbox_to_anchor=(0.5, -0.12), ncol=3, fontsize=9, frameon=False)
 
-    axe_barres.bar(["Sans\nmutualisation", "Avec\nmutualisation"], [sans_mutualisation, avec_mutualisation],
-                   color=["tab:red", "tab:green"])
-    axe_barres.set(title="Nombre d'essais", ylabel="Essais")
+    barres = axe_barres.bar(["Un essai\npar projet", "Essais\nmutualisés"], [sans_mutualisation, avec_mutualisation],
+                            color=["tab:red", "tab:green"])
+    axe_barres.bar_label(barres, fontsize=12, fontweight="bold")
+    axe_barres.set(title="Nombre d'essais", ylabel="Essais", ylim=(0, sans_mutualisation * 1.15))
     axe_barres.grid(True, axis="y", alpha=0.3)
-    figure.suptitle("Matrice d'essais : un référentiel commun pour plusieurs radars (valeurs illustratives)")
+    figure.suptitle("Matrice d'essais : un seul référentiel pour trois radars  (valeurs illustratives)")
     figure.tight_layout()
     figure.savefig(os.path.join(dossier, "matrice_essais.png"), dpi=150)
     plt.show()

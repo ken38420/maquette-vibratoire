@@ -151,38 +151,46 @@ if __name__ == "__main__":
     with open(os.path.join(dossier, "rapport.txt"), "w", encoding="utf-8") as fichier:
         fichier.write(rapport)
 
-    # figure de synthèse
-    figure, axes = plt.subplots(2, 2, figsize=(14, 9))
-    axes[0, 0].loglog(f, abs(T[:, 0]), label="Caisson")
-    axes[0, 0].loglog(f, abs(T[:, 1]), label="Carte")
-    axes[0, 0].axhline(1, color="grey", ls="--")
-    axes[0, 0].set(title="Transmissibilité (sortie / entrée)", xlabel="Fréquence [Hz]",
-                   ylabel="|T| [-]", xlim=(5, 2000))
+    # figure de synthèse : 3 images, de gauche à droite = ce qui se passe, est-ce conforme, est-ce robuste
+    figure, axes = plt.subplots(1, 3, figsize=(19, 5.5), gridspec_kw={"width_ratios": [1.5, 1, 1]})
 
-    dans_profil = dsp > 0
-    axes[0, 1].loglog(f[dans_profil], dsp[dans_profil], "k", lw=2, label=f"Entrée {grms_entree:.2f} Grms")
-    axes[0, 1].loglog(f[dans_profil], (abs(T[:, 0]) ** 2 * dsp)[dans_profil], label=f"Caisson {grms_caisson:.2f} Grms")
-    axes[0, 1].loglog(f[dans_profil], (abs(T[:, 1]) ** 2 * dsp)[dans_profil], label=f"Carte {grms_carte:.2f} Grms")
-    axes[0, 1].set(title="DSP d'accélération", xlabel="Fréquence [Hz]", ylabel="DSP [g²/Hz]", ylim=(1e-6, 1))
-    for axe in axes[0]:
-        axe.legend()
-        axe.grid(True, which="both", alpha=0.3)
+    # 1. transmissibilité : combien chaque pièce bouge par rapport à la base, selon la fréquence
+    axe = axes[0]
+    axe.loglog(f, abs(T[:, 0]), lw=2, label="Caisson")
+    axe.loglog(f, abs(T[:, 1]), lw=2, label="Carte")
+    axe.axhline(1, color="grey", ls="--")
+    axe.annotate(f"résonance des silentblocs\n({modes[0]:.0f} Hz, x{abs(T[:, 0]).max():.0f})",
+                 xy=(modes[0], abs(T[:, 0]).max()), xytext=(45, 9), fontsize=9,
+                 arrowprops=dict(arrowstyle="->", color="k"))
+    axe.annotate(f"résonance de la carte\n({modes[1]:.0f} Hz)", xy=(modes[1], abs(T[:, 1])[np.argmin(abs(f - modes[1]))]),
+                 xytext=(320, 2), fontsize=9, arrowprops=dict(arrowstyle="->", color="k"))
+    axe.text(6, 0.004, "au-dessus de 1 : amplifie\nen dessous de 1 : isole", fontsize=9, color="grey")
+    axe.set(title="Ce qui bouge, et à quelle fréquence", xlabel="Fréquence [Hz]",
+            ylabel="Mouvement de la pièce / mouvement de la base", xlim=(5, 2000), ylim=(1e-3, 20))
+    axe.legend(loc="lower left")
+    axe.grid(True, which="both", alpha=0.3)
 
-    # marges du cas nominal (vert = conforme, rouge = non conforme), valeur écrite au bout de chaque barre
+    # 2. les 3 critères du cas nominal (vert = conforme, rouge = non conforme)
     ms_nominal = [c[3] for c in criteres]
-    barres = axes[1, 0].barh([c[0] for c in criteres], ms_nominal,
-                             color=["tab:green" if v >= 0 else "tab:red" for v in ms_nominal])
-    axes[1, 0].bar_label(barres, fmt="%+.2f", padding=3)
-    axes[1, 0].axvline(0, color="k")
-    axes[1, 0].set(title="Marges, cas nominal (MS >= 0 : conforme)", xlabel="MS", xlim=(min(ms_nominal + [0]), max(ms_nominal) * 1.2))
+    noms_courts = ["Modes assez séparés ?", "Le caisson ne tape pas ?", "La carte tient (Steinberg) ?"]
+    barres = axes[1].barh(noms_courts, ms_nominal, color=["tab:green" if v >= 0 else "tab:red" for v in ms_nominal])
+    axes[1].bar_label(barres, fmt="%+.2f", padding=3)
+    axes[1].axvline(0, color="k")
+    axes[1].set(title="Les 3 critères (marge > 0 : conforme)", xlabel="Marge de sécurité",
+                xlim=(min(ms_nominal + [0]) - 0.2, max(ms_nominal) * 1.25))
+    axes[1].invert_yaxis()
 
-    # sensibilité : pire marge de chaque cas
-    barres = axes[1, 1].barh([c[0] for c in cas], pires_ms,
-                             color=["tab:green" if v >= 0 else "tab:red" for v in pires_ms])
-    axes[1, 1].bar_label(barres, fmt="%+.2f", padding=3)
-    axes[1, 1].axvline(0, color="k")
-    axes[1, 1].set(title="Sensibilité : pire marge de chaque cas", xlabel="MS min", xlim=(min(pires_ms + [0]), max(pires_ms) * 1.2))
-    figure.suptitle("Maquette vibratoire : caisson sur silentblocs + carte (valeurs illustratives)")
+    # 3. robustesse : la pire marge reste-t-elle positive si les silentblocs changent ?
+    barres = axes[2].barh([c[0] for c in cas], pires_ms,
+                          color=["tab:green" if v >= 0 else "tab:red" for v in pires_ms])
+    axes[2].bar_label(barres, fmt="%+.2f", padding=3)
+    axes[2].axvline(0, color="k")
+    axes[2].set(title="Et si les silentblocs changent ? (pire marge)", xlabel="Pire marge de sécurité",
+                xlim=(min(pires_ms + [0]) - 0.2, max(pires_ms) * 1.25))
+    axes[2].invert_yaxis()
+
+    figure.suptitle(f"Caisson de {caisson[0]:.0f} kg sur silentblocs à {caisson[1]:.0f} Hz, carte à {carte[1]:.0f} Hz, "
+                    f"entrée {grms_entree:.1f} Grms  (valeurs illustratives)")
     figure.tight_layout()
     figure.savefig(os.path.join(dossier, "synthese.png"), dpi=150)
     plt.show()
